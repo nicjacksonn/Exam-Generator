@@ -1,0 +1,2571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExamGen — AI Exam Question Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#2563eb;--brand-light:#eff6ff;--brand-dark:#1d4ed8;
+  --green:#16a34a;--green-light:#f0fdf4;
+  --amber:#d97706;--amber-light:#fffbeb;
+  --red:#dc2626;--red-light:#fef2f2;
+  --purple:#7c3aed;--purple-light:#f5f3ff;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;
+  --gray-300:#d1d5db;--gray-400:#9ca3af;--gray-500:#6b7280;
+  --gray-600:#4b5563;--gray-700:#374151;--gray-800:#1f2937;--gray-900:#111827;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.1);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-50);color:var(--gray-900);line-height:1.5;font-size:14px}
+/* NAV */
+nav{background:#fff;border-bottom:1px solid var(--gray-200);position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0 1.25rem;height:56px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:.625rem;font-weight:700;font-size:1.05rem;color:var(--gray-900);text-decoration:none}
+.logo-icon{background:var(--brand);color:#fff;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+.nav-links{display:flex;gap:.25rem}
+.nav-btn{background:none;border:none;cursor:pointer;padding:.375rem .75rem;border-radius:8px;font-size:.8125rem;font-weight:500;color:var(--gray-600);display:flex;align-items:center;gap:.375rem;transition:background .15s,color .15s}
+.nav-btn:hover{background:var(--gray-100);color:var(--gray-900)}
+.nav-btn.active{background:var(--brand-light);color:var(--brand)}
+/* LAYOUT */
+.page{display:none;max-width:1280px;margin:0 auto;padding:1.5rem 1.25rem}
+.page.active{display:block}
+/* CARDS */
+.card{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-header{padding:.875rem 1.25rem;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:.5rem}
+.card-header h2{font-size:.9375rem;font-weight:600;color:var(--gray-900)}
+.card-body{padding:1.25rem}
+/* FORMS */
+label.lbl{display:block;font-size:.8125rem;font-weight:500;color:var(--gray-700);margin-bottom:.375rem}
+input[type=text],input[type=number],select,textarea{width:100%;border:1px solid var(--gray-300);border-radius:8px;padding:.5rem .75rem;font-size:.875rem;color:var(--gray-900);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+textarea{resize:vertical;min-height:160px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.75rem}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:.375rem;padding:.5rem 1rem;border-radius:8px;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid transparent;font-family:inherit;white-space:nowrap}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-primary:hover:not(:disabled){background:var(--brand-dark)}
+.btn-secondary{background:#fff;color:var(--gray-700);border-color:var(--gray-300)}
+.btn-secondary:hover:not(:disabled){background:var(--gray-50)}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-danger:hover{background:#b91c1c}
+.btn-ghost{background:none;color:var(--gray-500);border:none;padding:.375rem .5rem}
+.btn-ghost:hover{background:var(--gray-100);color:var(--gray-700)}
+.btn-sm{padding:.25rem .625rem;font-size:.8125rem}
+.btn-lg{padding:.75rem 1.5rem;font-size:1rem}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:9999px;font-size:.75rem;font-weight:500;border:1px solid transparent}
+.badge-blue{background:var(--brand-light);color:var(--brand);border-color:#bfdbfe}
+.badge-indigo{background:#eef2ff;color:#4338ca;border-color:#c7d2fe}
+.badge-violet{background:var(--purple-light);color:var(--purple);border-color:#ddd6fe}
+.badge-green{background:var(--green-light);color:var(--green);border-color:#bbf7d0}
+.badge-yellow{background:var(--amber-light);color:var(--amber);border-color:#fde68a}
+.badge-red{background:var(--red-light);color:var(--red);border-color:#fecaca}
+.badge-gray{background:var(--gray-100);color:var(--gray-600);border-color:var(--gray-200)}
+.badge-cyan{background:#ecfeff;color:#0e7490;border-color:#a5f3fc}
+.badge-emerald{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+/* ALERTS */
+.alert{padding:.875rem 1rem;border-radius:var(--radius);border:1px solid;display:flex;gap:.625rem;align-items:flex-start;margin-bottom:1rem}
+.alert-icon{flex-shrink:0;margin-top:.125rem;font-size:1rem}
+.alert-blue{background:var(--brand-light);border-color:#bfdbfe;color:#1e40af}
+.alert-green{background:var(--green-light);border-color:#bbf7d0;color:#14532d}
+.alert-amber{background:var(--amber-light);border-color:#fde68a;color:#78350f}
+.alert-red{background:var(--red-light);border-color:#fecaca;color:#7f1d1d}
+/* CHECKBOXES */
+.check-row{display:flex;align-items:center;gap:.5rem;cursor:pointer}
+.check-row input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--brand)}
+/* TYPE SELECTOR */
+.type-row{display:flex;align-items:center;justify-content:space-between;padding:.625rem .875rem;border:1px solid var(--gray-200);border-radius:8px;transition:border-color .15s,background .15s;margin-bottom:.375rem}
+.type-row.selected{border-color:#93c5fd;background:var(--brand-light)}
+.type-count{display:flex;align-items:center;gap:.5rem;font-size:.8125rem}
+.type-count input{width:56px;text-align:center}
+/* LEVEL CARDS */
+.level-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.level-card{border:2px solid var(--gray-200);border-radius:var(--radius);padding:1rem;cursor:pointer;transition:all .15s;background:#fff}
+.level-card:hover{border-color:var(--gray-300)}
+.level-card.selected{border-color:var(--brand);background:var(--brand-light)}
+.level-card-title{font-weight:700;font-size:1rem;color:var(--gray-900);margin-bottom:.25rem}
+.level-card.selected .level-card-title{color:var(--brand)}
+.level-card-desc{font-size:.75rem;color:var(--gray-500)}
+/* QUESTION CARD */
+.q-card{border:1px solid var(--gray-200);border-radius:var(--radius);background:#fff;margin-bottom:.75rem;overflow:hidden}
+.q-card-header{background:var(--gray-50);padding:.625rem 1rem;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:.5rem}
+.q-card-badges{display:flex;flex-wrap:wrap;gap:.375rem;align-items:center}
+.q-card-actions{display:flex;gap:.125rem;flex-shrink:0}
+.q-card-body{padding:1rem}
+.case-study-box{background:var(--amber-light);border:1px solid #fde68a;border-radius:8px;padding:.875rem;margin-bottom:.875rem}
+.case-study-label{font-size:.75rem;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.375rem}
+.question-text{font-size:.9375rem;font-weight:500;color:var(--gray-900);line-height:1.6;margin-bottom:.875rem}
+.mcq-options{display:flex;flex-direction:column;gap:.375rem;margin-bottom:.875rem;padding-left:.25rem}
+.mcq-opt{display:flex;align-items:flex-start;gap:.625rem;padding:.5rem .75rem;border-radius:8px;border:1px solid var(--gray-100);background:var(--gray-50);font-size:.875rem;color:var(--gray-700)}
+.mcq-opt.correct{background:var(--green-light);border-color:#bbf7d0;color:#14532d;font-weight:500}
+.mcq-opt-letter{font-weight:600;color:var(--gray-500);min-width:1rem;flex-shrink:0}
+.answer-box{background:var(--brand-light);border:1px solid #bfdbfe;border-radius:8px;padding:.875rem;margin-bottom:.625rem}
+.answer-label{font-size:.75rem;font-weight:600;color:var(--brand);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+.mark-scheme-box{background:var(--purple-light);border:1px solid #ddd6fe;border-radius:8px;padding:.875rem}
+.chart-box{background:#fff;border:1px solid var(--gray-200);border-radius:8px;padding:.875rem;margin-bottom:.875rem}
+.chart-label{font-size:.75rem;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.625rem}
+.chart-wrap{position:relative;height:260px}
+.main-drop-zone{border:2px dashed var(--gray-300);border-radius:14px;background:var(--gray-50);padding:1.5rem;transition:border-color .2s,background .2s;margin-bottom:.875rem;display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:center;min-height:160px}
+.main-drop-zone.drag-active{border-color:var(--brand);background:var(--brand-light)}
+.drop-left{text-align:center;padding:1rem 0}
+.drop-zone-title{font-size:1.2rem;font-weight:600;color:var(--gray-800);margin-bottom:.3rem}
+.drop-zone-sub{font-size:.85rem;color:var(--gray-400);margin-bottom:1rem}
+.drop-actions{display:flex;gap:.375rem;justify-content:center;flex-wrap:wrap;margin-top:.875rem}
+.drop-action-btn{display:inline-flex;align-items:center;gap:.375rem;padding:.4rem .875rem;border:1px solid var(--gray-200);border-radius:9999px;background:#fff;font-size:.8125rem;color:var(--gray-700);cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;font-family:inherit;font-weight:500;white-space:nowrap}
+.drop-action-btn:hover{border-color:var(--gray-400);background:var(--gray-50);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.drop-right{border-left:1px solid var(--gray-200);padding-left:1.25rem;min-height:120px;display:flex;flex-direction:column}
+.drop-right-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--gray-300);font-size:.8125rem;gap:.375rem;padding:1rem 0}
+@media(max-width:640px){.main-drop-zone{grid-template-columns:1fr}.drop-right{border-left:none;border-top:1px solid var(--gray-200);padding-left:0;padding-top:1rem}}
+.sources-list{display:flex;flex-direction:column;gap:.375rem;margin:.75rem auto 0;max-width:520px;width:100%}
+.source-row{display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;background:#fff;border:1px solid var(--gray-200);border-radius:8px;text-align:left}
+.source-thumb{width:36px;height:36px;border-radius:6px;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1rem}
+.source-thumb.type-pdf{background:#fef2f2;border:1px solid #fecaca}
+.source-thumb.type-image{border:1px solid var(--gray-100)}
+.source-thumb img{width:100%;height:100%;object-fit:cover}
+.source-info{flex:1;min-width:0;text-align:left}
+.source-name{font-size:.8125rem;font-weight:500;color:var(--gray-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.source-meta{font-size:.72rem;color:var(--gray-400);margin-top:.1rem}
+.source-status{font-size:.72rem;font-weight:500}
+.source-remove{background:none;border:none;cursor:pointer;color:var(--gray-300);font-size:1rem;padding:.25rem .25rem;line-height:1;flex-shrink:0}
+.source-remove:hover{color:var(--red)}
+.img-status{font-size:.8rem;font-weight:500;margin-top:.375rem}
+.mark-scheme-label{font-size:.75rem;font-weight:600;color:var(--purple);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+.rw-note{display:flex;align-items:flex-start;gap:.375rem;font-size:.75rem;color:var(--gray-500);margin-top:.625rem}
+.verify-note{display:flex;align-items:flex-start;gap:.375rem;font-size:.75rem;color:var(--amber);background:var(--amber-light);border:1px solid #fde68a;border-radius:6px;padding:.5rem .625rem;margin-top:.5rem}
+/* SECTION DIVIDER */
+.section-divider{display:flex;align-items:center;gap:.75rem;margin:1.25rem 0 .875rem}
+.section-divider h3{font-size:.8125rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-500);white-space:nowrap}
+.section-divider-line{flex:1;height:1px;background:var(--gray-200)}
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:1.25rem;display:flex;align-items:center;gap:.875rem}
+.stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0}
+.stat-num{font-size:1.75rem;font-weight:700;color:var(--gray-900);line-height:1}
+.stat-lbl{font-size:.75rem;color:var(--gray-500);margin-top:.125rem}
+/* HERO */
+.hero{background:linear-gradient(135deg,#1d4ed8,#4338ca);border-radius:16px;padding:2rem;color:#fff;margin-bottom:1.5rem}
+.hero h1{font-size:1.75rem;font-weight:700;margin-bottom:.5rem}
+.hero p{color:#bfdbfe;font-size:.9375rem;margin-bottom:1.25rem;max-width:560px;line-height:1.6}
+.hero-btns{display:flex;gap:.75rem;flex-wrap:wrap}
+/* QUICK ACTIONS */
+.qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.qa-card{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:1.25rem;cursor:pointer;transition:all .15s;text-decoration:none;display:block}
+.qa-card:hover{border-color:#93c5fd;box-shadow:var(--shadow-md)}
+.qa-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.125rem;margin-bottom:.875rem}
+.qa-title{font-weight:600;font-size:.9375rem;color:var(--gray-900);margin-bottom:.25rem}
+.qa-desc{font-size:.8125rem;color:var(--gray-500);line-height:1.4}
+/* LOADING */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem}
+.loading-overlay.active{display:flex}
+.spinner{width:48px;height:48px;border:4px solid var(--gray-200);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-weight:500;color:var(--gray-700)}
+.loading-sub{font-size:.875rem;color:var(--gray-500)}
+/* MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-backdrop.active{display:flex}
+.modal{background:#fff;border-radius:16px;box-shadow:0 20px 25px -5px rgba(0,0,0,.2);width:100%;max-width:640px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-header{padding:1rem 1.25rem;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-header h3{font-weight:600;font-size:1rem;color:var(--gray-900)}
+.modal-body{padding:1.25rem;overflow-y:auto;flex:1}
+.modal-footer{padding:.875rem 1.25rem;border-top:1px solid var(--gray-100);display:flex;gap:.5rem;justify-content:flex-end;flex-shrink:0;background:#fff}
+/* BANK */
+.bank-filters{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.bank-filters select{width:auto}
+.bank-list{margin-top:1rem;display:flex;flex-direction:column;gap:.625rem}
+/* BUILDER */
+.builder-grid{display:grid;grid-template-columns:280px 1fr;gap:1.25rem;align-items:start}
+.builder-sidebar{position:sticky;top:68px;max-height:calc(100vh - 84px);overflow-y:auto;display:flex;flex-direction:column;gap:.75rem}
+.picker-item{border:1px solid var(--gray-200);border-radius:8px;padding:.75rem;background:#fff;margin-bottom:.5rem;cursor:pointer;transition:border-color .15s}
+.picker-item:hover{border-color:#93c5fd}
+.picker-item-badges{display:flex;flex-wrap:wrap;gap:.25rem;margin-bottom:.375rem}
+.picker-item-text{font-size:.8125rem;color:var(--gray-700);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.section-box{border:1px solid var(--gray-200);border-radius:var(--radius);overflow:hidden;margin-bottom:.75rem}
+.section-box-header{background:var(--gray-50);padding:.625rem .875rem;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:.5rem}
+.section-box-header input{flex:1;border:1px solid var(--gray-200);border-radius:6px;padding:.25rem .5rem;font-size:.875rem}
+.section-box-body{padding:.75rem;min-height:48px}
+.section-q-row{display:flex;align-items:center;gap:.5rem;padding:.375rem .5rem;border:1px solid var(--gray-100);border-radius:6px;background:#fff;margin-bottom:.375rem;transition:border-color .15s,opacity .15s}
+.section-q-row.drag-over{border-color:var(--brand);border-top:2px solid var(--brand);background:var(--brand-light)}
+.section-q-row.dragging{opacity:.35}
+.drag-handle{cursor:grab;color:var(--gray-300);font-size:1.1rem;flex-shrink:0;line-height:1;padding:0 .125rem;user-select:none}
+.drag-handle:hover{color:var(--gray-500)}
+.drag-handle:active{cursor:grabbing}
+/* EXPORT */
+.export-grid{display:grid;grid-template-columns:280px 1fr;gap:1.25rem;align-items:start}
+.exam-list-item{border:1px solid var(--gray-200);border-radius:8px;padding:.875rem;margin-bottom:.5rem;cursor:pointer;transition:all .15s;background:#fff}
+.exam-list-item:hover{border-color:#93c5fd}
+.exam-list-item.selected{border-color:var(--brand);background:var(--brand-light)}
+.export-option{border:1px solid var(--gray-200);border-radius:var(--radius);padding:1rem;margin-bottom:.75rem;background:#fff}
+.export-option-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.export-option-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#fff}
+.preview-box{background:var(--gray-50);border:1px solid var(--gray-100);border-radius:8px;padding:.75rem;max-height:160px;overflow-y:auto;font-family:monospace;font-size:.75rem;white-space:pre-wrap;line-height:1.5;color:var(--gray-600)}
+/* EXPORT PREVIEW MODAL */
+.preview-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;padding:1.5rem}
+.preview-modal-backdrop.active{display:flex}
+.preview-modal{background:#fff;border-radius:12px;width:100%;max-width:860px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.preview-modal-header{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.25rem;border-bottom:1px solid var(--gray-200);flex-shrink:0}
+.preview-modal-title{font-weight:600;font-size:.9375rem;color:var(--gray-900)}
+.preview-modal-actions{display:flex;gap:.375rem;align-items:center}
+.preview-modal-body{flex:1;overflow-y:auto;padding:2rem 2.5rem;background:#fff}
+.preview-modal-body pre{font-family:'Times New Roman',Georgia,serif;font-size:12pt;line-height:1.8;color:#111;white-space:pre-wrap;word-break:break-word}
+/* UTILITY */
+.gap-2{gap:.5rem}.gap-3{gap:.75rem}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-5{margin-top:1.25rem}
+.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-between{justify-content:space-between}.flex-wrap{flex-wrap:wrap}.flex-1{flex:1}
+.text-sm{font-size:.875rem}.text-xs{font-size:.75rem}.text-lg{font-size:1.125rem}.font-bold{font-weight:700}.font-semibold{font-weight:600}.font-medium{font-weight:500}
+.text-gray{color:var(--gray-500)}.text-brand{color:var(--brand)}.text-red{color:var(--red)}.text-green{color:var(--green)}
+.w-full{width:100%}.hidden{display:none!important}
+.page-title{font-size:1.5rem;font-weight:700;color:var(--gray-900);margin-bottom:.25rem}
+.page-sub{font-size:.875rem;color:var(--gray-500)}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:1rem;flex-wrap:wrap}
+.collapse-toggle{background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:.375rem;font-size:.8125rem;font-weight:500;color:var(--gray-500);padding:.375rem 0;transition:color .15s}
+.collapse-toggle:hover{color:var(--gray-700)}
+.collapsible{overflow:hidden;transition:max-height .25s ease}
+.progress-bar{height:6px;background:var(--gray-100);border-radius:9999px;overflow:hidden;margin-top:.375rem}
+.progress-fill{height:100%;border-radius:9999px;transition:width .3s}
+@media(max-width:768px){
+  .stats-grid,.qa-grid{grid-template-columns:1fr 1fr}
+  .level-cards{grid-template-columns:1fr}
+  .grid2,.grid3,.grid4{grid-template-columns:1fr}
+  .builder-grid,.export-grid{grid-template-columns:1fr}
+  .builder-sidebar{position:static;max-height:none;overflow-y:visible}
+  .nav-btn span{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="logo">
+      <div class="logo-icon">📚</div>
+      <span>ExamGen</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-btn active" onclick="showPage('dashboard')" id="nav-dashboard">🏠 <span>Dashboard</span></button>
+      <button class="nav-btn" onclick="showPage('generate')" id="nav-generate">✨ <span>Generate</span></button>
+      <button class="nav-btn" onclick="showPage('questions')" id="nav-questions">🗄️ <span>Question Bank</span></button>
+      <button class="nav-btn" onclick="showPage('builder')" id="nav-builder">🔧 <span>Exam Builder</span></button>
+      <button class="nav-btn" onclick="showPage('export')" id="nav-export">📤 <span>Export</span></button>
+      <button class="nav-btn" onclick="showApiKeyModal()" id="nav-settings">⚙️ <span>API Key</span></button>
+    </div>
+  </div>
+</nav>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Generating exam questions…</div>
+  <div class="loading-sub" id="loadingSub">Analysing content and creating mark schemes. This takes 15–30 seconds.</div>
+  <button onclick="cancelGenerate()" style="margin-top:1.25rem;background:none;border:1px solid rgba(255,255,255,.4);color:rgba(255,255,255,.8);padding:.375rem 1rem;border-radius:8px;cursor:pointer;font-size:.8125rem">Cancel</button>
+</div>
+
+<!-- EXPORT PREVIEW MODAL -->
+<div class="preview-modal-backdrop" id="exportPreviewModal" onclick="if(event.target===this)closePreviewModal()">
+  <div class="preview-modal">
+    <div class="preview-modal-header">
+      <div class="preview-modal-title" id="previewModalTitle">Preview</div>
+      <div class="preview-modal-actions">
+        <button class="btn btn-secondary btn-sm" id="previewCopyBtn" onclick="copyExport(window._previewKey)">📋 Copy</button>
+        <button class="btn btn-secondary btn-sm" id="previewPrintBtn" onclick="printExport(window._previewKey)">🖨 Print / Save PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="closePreviewModal()" style="font-size:1.1rem;padding:.25rem .5rem">✕</button>
+      </div>
+    </div>
+    <div class="preview-modal-body" id="previewModalBody">
+      <pre id="previewModalContent"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- API KEY MODAL -->
+<div class="modal-backdrop" id="apiKeyModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3>⚙️ Google Gemini API Key</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('apiKeyModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-blue"><span class="alert-icon">ℹ️</span><div>ExamGen uses <strong>Groq</strong> to generate questions — completely <strong>free</strong>, no credit card needed, works globally. Your key is stored only in your browser.</div></div>
+      <label class="lbl">Groq API Key</label>
+      <input type="text" id="apiKeyInput" placeholder="gsk_..." style="font-family:monospace">
+      <p class="text-xs text-gray mt-2">Get a free key at <strong>console.groq.com</strong> → API Keys → Create API Key</p>
+      <div class="mt-3">
+        <label class="lbl">Model</label>
+        <select id="geminiModel">
+          <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile — best quality (recommended)</option>
+          <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile — also excellent</option>
+          <option value="llama-3.1-8b-instant">llama-3.1-8b-instant — fastest</option>
+          <option value="mixtral-8x7b-32768">mixtral-8x7b-32768 — large context window</option>
+        </select>
+      </div>
+      <div class="alert alert-amber mt-3"><span class="alert-icon">⚠️</span><div>Keep your API key private. Do not share this file with your key saved in it.</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('apiKeyModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">💾 Save Key</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT QUESTION MODAL -->
+<div class="modal-backdrop" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✏️ Edit Question</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('editModal')">✕</button>
+    </div>
+    <div class="modal-body" id="editModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditedQuestion()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div class="page active" id="page-dashboard">
+  <div class="hero">
+    <h1>Turn textbook content into professional exam questions</h1>
+    <p>Paste lesson notes, textbook pages, or syllabus content — ExamGen creates IGCSE, AS Level, and IAL exam-style questions with answers, mark schemes, and real-world examples in seconds.</p>
+    <div class="hero-btns">
+      <button class="btn btn-primary btn-lg" onclick="showPage('generate')" style="background:#fff;color:var(--brand)">✨ Start Generating</button>
+      <button class="btn btn-secondary btn-lg" onclick="showPage('questions')" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)">View Question Bank →</button>
+    </div>
+  </div>
+
+  <div class="stats-grid" id="dashStats">
+    <div class="stat-card"><div class="stat-icon" style="background:#eff6ff">📝</div><div><div class="stat-num" id="statQCount">0</div><div class="stat-lbl">Questions Generated</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#f0fdf4">📄</div><div><div class="stat-num" id="statECount">0</div><div class="stat-lbl">Exam Papers</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#f5f3ff">📚</div><div><div class="stat-num" id="statSCount">0</div><div class="stat-lbl">Subjects Covered</div></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:#fffbeb">🏷️</div><div><div class="stat-num" id="statTCount">0</div><div class="stat-lbl">Topics</div></div></div>
+  </div>
+
+  <div class="qa-grid">
+    <div class="qa-card" onclick="showPage('generate')">
+      <div class="qa-icon" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">✨</div>
+      <div class="qa-title">Generate Questions</div>
+      <div class="qa-desc">Paste textbook content and instantly generate exam-style questions with mark schemes</div>
+    </div>
+    <div class="qa-card" onclick="showPage('questions')">
+      <div class="qa-icon" style="background:linear-gradient(135deg,#10b981,#059669)">🗄️</div>
+      <div class="qa-title">Question Bank</div>
+      <div class="qa-desc">Browse, search, and filter all saved questions across subjects and levels</div>
+    </div>
+    <div class="qa-card" onclick="showPage('builder')">
+      <div class="qa-icon" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed)">🔧</div>
+      <div class="qa-title">Exam Builder</div>
+      <div class="qa-desc">Assemble a full exam paper from saved questions with custom settings</div>
+    </div>
+    <div class="qa-card" onclick="showPage('export')">
+      <div class="qa-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706)">📤</div>
+      <div class="qa-title">Export Papers</div>
+      <div class="qa-desc">Export student papers, teacher versions, and full exam packs</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:1rem">
+    <div class="card">
+      <div class="card-header"><h2>What ExamGen does</h2></div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:.625rem;font-size:.875rem;color:var(--gray-600)">
+          <div>✅ IGCSE, AS Level &amp; IAL / A Level</div>
+          <div>✅ MCQ, short answer, case study, essay</div>
+          <div>✅ Real-world example integration</div>
+          <div>✅ Automatic mark schemes &amp; model answers</div>
+          <div>✅ Question bank with search &amp; filters</div>
+          <div>✅ Student &amp; teacher version exports</div>
+          <div>✅ Exam builder from saved questions</div>
+          <div>✅ Print &amp; copy to Google Docs</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Recent Exams</h2></div>
+      <div class="card-body" id="dashRecentExams">
+        <div style="text-align:center;padding:2rem 0;color:var(--gray-400)">
+          <div style="font-size:2rem;margin-bottom:.5rem">🕐</div>
+          <p class="text-sm">No exams yet. <button class="btn btn-ghost btn-sm text-brand" onclick="showPage('generate')">Generate your first exam →</button></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-header"><h2>Optimised for these subjects</h2></div>
+    <div class="card-body">
+      <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+        <span class="badge badge-blue">Business Studies</span>
+        <span class="badge badge-blue">Economics</span>
+        <span class="badge badge-indigo">Psychology</span>
+        <span class="badge badge-indigo">Global Citizenship</span>
+        <span class="badge badge-violet">History</span>
+        <span class="badge badge-violet">Politics</span>
+        <span class="badge badge-green">Sociology</span>
+        <span class="badge badge-green">Geography</span>
+        <span class="badge badge-yellow">Law</span>
+        <span class="badge badge-yellow">Media Studies</span>
+        <span class="badge badge-gray">Environmental Management</span>
+        <span class="badge badge-gray">Travel &amp; Tourism</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== GENERATE ==================== -->
+<div class="page" id="page-generate">
+  <div class="page-head">
+    <div>
+      <div class="page-title">✨ Generate Exam Questions</div>
+      <div class="page-sub">Paste textbook content and configure your exam settings</div>
+    </div>
+    <button class="btn btn-secondary" onclick="resetGenerate()" title="Clear everything and start a new generation">🔄 New Generation</button>
+  </div>
+
+  <div id="genErrorAlert" class="hidden"></div>
+
+  <!-- STEP 1: CONTENT -->
+  <div class="card mb-3">
+    <div class="card-header">📖 <h2>Step 1: Add Your Content</h2></div>
+    <div class="card-body">
+      <!-- Unified drop zone -->
+      <div id="mainDropZone" class="main-drop-zone"
+        ondragover="mainDragOver(event)"
+        ondragleave="mainDragLeave(event)"
+        ondrop="mainDrop(event)">
+
+        <!-- Hidden file inputs -->
+        <input type="file" id="pdfFileInput" accept=".pdf" style="display:none" onchange="handlePdfFile(this.files[0])">
+        <input type="file" id="imgFileInput" accept="image/*" multiple style="display:none" onchange="handleImgFiles(this.files)">
+        <input type="file" id="mainFileInput" accept=".pdf,image/*,.txt" multiple style="display:none" onchange="handleMainFiles(this.files)">
+
+        <!-- LEFT: drop prompt + buttons -->
+        <div class="drop-left">
+          <div style="font-size:2rem;margin-bottom:.5rem">📂</div>
+          <div class="drop-zone-title">Drop your files here</div>
+          <div class="drop-zone-sub">pdf, images, docs, and more</div>
+
+          <!-- Website URL input -->
+          <div id="urlInputRow" style="display:none;margin-bottom:.625rem">
+            <div style="display:flex;gap:.375rem;max-width:340px;margin:0 auto">
+              <input type="url" id="websiteUrl" placeholder="https://…" style="flex:1;font-size:.8125rem" onkeydown="if(event.key==='Enter')fetchWebsiteContent()">
+              <button class="btn btn-primary btn-sm" onclick="fetchWebsiteContent()">Go</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('urlInputRow').style.display='none'">✕</button>
+            </div>
+            <div id="urlStatus" style="font-size:.78rem;font-weight:500;margin-top:.375rem;display:none"></div>
+          </div>
+
+          <div class="drop-actions">
+            <button class="drop-action-btn" onclick="document.getElementById('mainFileInput').click()">↑ Upload files</button>
+            <button class="drop-action-btn" onclick="toggleUrlInput()">🔗 Websites</button>
+            <button class="drop-action-btn" onclick="document.getElementById('imgFileInput').click()">🖼️ Images</button>
+            <button class="drop-action-btn" onclick="pasteClipboardText()">📋 Copied text</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: uploaded sources -->
+        <div class="drop-right">
+          <div id="pdfStatus" style="font-size:.78rem;font-weight:500;display:none;margin-bottom:.375rem"></div>
+          <div id="imgStatus" class="img-status" style="display:none;margin-bottom:.375rem"></div>
+          <div id="sourcesList" class="sources-list" style="margin:0"></div>
+          <div id="sourcesEmpty" class="drop-right-empty">
+            <span style="font-size:1.5rem">📋</span>
+            <span>Uploaded files will appear here</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.875rem">
+        <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+        <span style="font-size:.8rem;color:var(--gray-400);font-weight:500">OR TYPE / PASTE TEXT BELOW</span>
+        <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+      </div>
+      <label class="lbl">Textbook content, lesson notes, syllabus points, or article extract *</label>
+      <textarea id="pastedContent" placeholder="Paste your textbook pages, lesson notes, syllabus content, or article extract here…
+
+The AI will analyse this content, identify key concepts, and generate original exam-style questions. It will not copy large sections of your content verbatim."></textarea>
+      <div class="flex justify-between mt-1">
+        <span class="text-xs text-gray" id="contentWordCount">0 words</span>
+        <button class="btn btn-ghost btn-sm text-xs" onclick="document.getElementById('pastedContent').value='';updateWordCount()" style="color:var(--gray-400)">Clear ✕</button>
+      </div>
+      <div class="grid2 mt-3">
+        <div>
+          <label class="lbl">Topic name (optional)</label>
+          <input type="text" id="topicName" placeholder="e.g. Price Elasticity of Demand">
+        </div>
+        <div>
+          <label class="lbl">Subject *</label>
+          <select id="subject">
+            <option>Business Studies</option>
+            <option>Economics</option>
+            <option>Psychology</option>
+            <option>Global Citizenship</option>
+            <option>History</option>
+            <option>Politics</option>
+            <option>Sociology</option>
+            <option>Geography</option>
+            <option>Law</option>
+            <option>Media Studies</option>
+            <option>Environmental Management</option>
+            <option>Travel &amp; Tourism</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: LEVEL & BOARD -->
+  <div class="card mb-3">
+    <div class="card-header">🎓 <h2>Step 2: Exam Level &amp; Board</h2></div>
+    <div class="card-body">
+      <label class="lbl">Exam Level *</label>
+      <div class="level-cards mb-3">
+        <div class="level-card selected" id="lvl-IGCSE" onclick="selectLevel('IGCSE')">
+          <div class="level-card-title">IGCSE</div>
+          <div class="level-card-desc">Accessible, structured, ESL-friendly. Define, Identify, Describe, Explain.</div>
+        </div>
+        <div class="level-card" id="lvl-AS" onclick="selectLevel('AS')">
+          <div class="level-card-title">AS Level</div>
+          <div class="level-card-desc">Application, analysis, some evaluation. Explain, Analyse, Compare, Assess.</div>
+        </div>
+        <div class="level-card" id="lvl-IAL" onclick="selectLevel('IAL')">
+          <div class="level-card-title">IAL / A Level</div>
+          <div class="level-card-desc">Evaluation, judgement, extended writing. Evaluate, Justify, To what extent.</div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label class="lbl">Exam Board</label>
+          <select id="examBoard">
+            <option>Cambridge (CIE)</option>
+            <option>Edexcel / Pearson</option>
+            <option>AQA</option>
+            <option>OCR</option>
+            <option>General</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Difficulty</label>
+          <select id="difficulty">
+            <option value="mixed">Mixed (recommended)</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="difficult">Difficult</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: QUESTION TYPES -->
+  <div class="card mb-3">
+    <div class="card-header">❓ <h2>Step 3: Question Types &amp; Counts</h2></div>
+    <div class="card-body" id="questionTypeList">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <!-- STEP 4: REAL-WORLD EXAMPLES -->
+  <div class="card mb-3">
+    <div class="card-header" style="cursor:pointer" onclick="toggleSection('rwSection')">
+      🌍 <h2>Step 4: Real-World Examples</h2>
+      <button class="collapse-toggle" style="margin-left:auto">▾</button>
+    </div>
+    <div id="rwSection" class="card-body">
+      <label class="check-row mb-3">
+        <input type="checkbox" id="includeRW" checked>
+        <span class="font-medium">Include real-world examples in questions</span>
+      </label>
+      <div id="rwOptions">
+        <div class="grid2">
+          <div>
+            <label class="lbl">Example timeframe</label>
+            <select id="rwTimeframe">
+              <option value="mixed">Mix of current and past examples</option>
+              <option value="current">Current / modern examples only</option>
+              <option value="past">Past events only</option>
+              <option value="none">No real-world examples</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Example style</label>
+            <select id="rwStyle">
+              <option value="mixed">Mixed examples</option>
+              <option value="business">Business examples</option>
+              <option value="economic">Economic examples</option>
+              <option value="country">Country-based examples</option>
+              <option value="political">Political examples</option>
+              <option value="historical">Historical examples</option>
+              <option value="psychology">Psychology research examples</option>
+              <option value="global">Global issue examples</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Preferred region (optional)</label>
+            <input type="text" id="rwRegion" placeholder="e.g. UK, Thailand, Global…">
+          </div>
+          <div>
+            <label class="lbl">Preferred context (optional)</label>
+            <input type="text" id="rwContext" placeholder="e.g. Retail, Technology, Healthcare…">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADVANCED OPTIONS -->
+  <div class="card mb-3">
+    <div class="card-header" style="cursor:pointer" onclick="toggleSection('advSection')">
+      💡 <h2>Advanced Options</h2>
+      <button class="collapse-toggle" style="margin-left:auto">▾</button>
+    </div>
+    <div id="advSection" class="card-body hidden">
+      <div class="grid2 mb-3">
+        <div>
+          <label class="lbl">Syllabus reference</label>
+          <input type="text" id="syllabusRef" placeholder="e.g. 1.1.2, Unit 3…">
+        </div>
+        <div>
+          <label class="lbl">Key terms to include</label>
+          <input type="text" id="keyTermsInclude" placeholder="e.g. elasticity, demand, revenue">
+        </div>
+        <div>
+          <label class="lbl">Key terms to avoid</label>
+          <input type="text" id="keyTermsAvoid" placeholder="e.g. supply side, multiplier">
+        </div>
+        <div>
+          <label class="lbl">Learning objectives</label>
+          <input type="text" id="learningObj" placeholder="e.g. Students can calculate PED">
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="lbl">Teacher instructions</label>
+        <textarea id="teacherInstr" style="min-height:80px" placeholder="Any specific instructions for the AI, e.g. 'Focus on evaluation questions', 'Use a UK supermarket as the case study'…"></textarea>
+      </div>
+      <div class="flex gap-3 flex-wrap">
+        <label class="check-row">
+          <input type="checkbox" id="inclAnswers" checked>
+          <span>Include model answers</span>
+        </label>
+        <label class="check-row">
+          <input type="checkbox" id="inclMarkScheme" checked>
+          <span>Include mark schemes</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- GENERATE BAR -->
+  <div style="background:var(--gray-900);border-radius:var(--radius);padding:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+    <div>
+      <div style="color:#fff;font-weight:600" id="genSummary">Select question types above to begin</div>
+      <div style="color:var(--gray-400);font-size:.875rem;margin-top:.25rem" id="genSummary2"></div>
+    </div>
+    <button class="btn btn-primary btn-lg" onclick="handleGenerate()" id="generateBtn" disabled>✨ Generate Questions</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="genResults" class="hidden mt-4"></div>
+</div>
+
+<!-- ==================== QUESTIONS BANK ==================== -->
+<div class="page" id="page-questions">
+  <div class="page-head">
+    <div>
+      <div class="page-title">🗄️ Question Bank</div>
+      <div class="page-sub" id="bankSubtitle">0 questions saved</div>
+    </div>
+    <button class="btn btn-secondary" onclick="clearBankFilters()">✕ Clear Filters</button>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="flex gap-2 mb-3">
+        <div style="position:relative;flex:1">
+          <span style="position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400)">🔍</span>
+          <input type="text" id="bankSearch" placeholder="Search by topic, question text, command word…" style="padding-left:2.25rem" oninput="renderBank()">
+        </div>
+      </div>
+      <div class="bank-filters">
+        <select id="bankLevel" onchange="renderBank()">
+          <option value="all">All levels</option>
+          <option value="IGCSE">IGCSE</option>
+          <option value="AS">AS Level</option>
+          <option value="IAL">IAL / A Level</option>
+        </select>
+        <select id="bankDifficulty" onchange="renderBank()">
+          <option value="all">All difficulties</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="difficult">Difficult</option>
+        </select>
+        <select id="bankType" onchange="renderBank()">
+          <option value="all">All types</option>
+          <option value="MCQ">MCQ</option>
+          <option value="case_study_mcq">Case-Study MCQ</option>
+          <option value="short_answer">Short Answer</option>
+          <option value="case_study_short">Case Study</option>
+          <option value="data_response">Data-Response</option>
+          <option value="calculation">Calculation</option>
+          <option value="long_answer">Long Answer</option>
+          <option value="essay">Essay</option>
+          <option value="full_case_study">Full Case Study</option>
+        </select>
+        <select id="bankSubject" onchange="renderBank()">
+          <option value="all">All subjects</option>
+        </select>
+        <select id="bankCaseStudy" onchange="renderBank()">
+          <option value="all">Case study: all</option>
+          <option value="yes">Case-study based</option>
+          <option value="no">No case study</option>
+        </select>
+        <select id="bankRW" onchange="renderBank()">
+          <option value="all">Examples: all</option>
+          <option value="yes">Has real-world example</option>
+          <option value="no">No real-world example</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="bankResultMeta" class="text-sm text-gray mb-3"></div>
+  <div id="bankList" class="bank-list"></div>
+</div>
+
+<!-- ==================== EXAM BUILDER ==================== -->
+<div class="page" id="page-builder">
+  <div class="page-head">
+    <div>
+      <div class="page-title">🔧 Exam Builder</div>
+      <div class="page-sub">Assemble a full exam paper from your saved questions</div>
+    </div>
+    <button class="btn btn-primary" onclick="saveBuilderExam()">💾 Save &amp; Export →</button>
+  </div>
+
+  <div class="builder-grid">
+    <!-- Picker -->
+    <div class="builder-sidebar">
+      <div class="card">
+        <div class="card-header"><h2>Available Questions</h2></div>
+        <div class="card-body">
+          <input type="text" id="pickerSearch" placeholder="Search questions…" oninput="renderPicker()">
+          <div style="display:flex;flex-direction:column;gap:.375rem;margin-top:.5rem">
+            <select id="pickerLevel" onchange="renderPicker()">
+              <option value="all">All levels</option>
+              <option value="IGCSE">IGCSE</option>
+              <option value="AS">AS Level</option>
+              <option value="IAL">IAL / A Level</option>
+            </select>
+            <select id="pickerDiff" onchange="renderPicker()">
+              <option value="all">Any difficulty</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="difficult">Difficult</option>
+            </select>
+            <select id="pickerType" onchange="renderPicker()">
+              <option value="all">All question types</option>
+              <option value="MCQ">Multiple Choice (MCQ)</option>
+              <option value="case_study_mcq">Case-Study MCQ</option>
+              <option value="short_answer">Short Answer</option>
+              <option value="case_study_short">Case-Study Short Answer</option>
+              <option value="long_answer">Long Answer</option>
+              <option value="essay">Essay</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="pickerList" style="max-height:60vh;overflow-y:auto"></div>
+    </div>
+
+    <!-- Paper -->
+    <div>
+      <div class="card mb-3">
+        <div class="card-header"><h2>Exam Settings</h2></div>
+        <div class="card-body">
+          <div class="grid2 mb-2">
+            <div class="grid2" style="grid-column:1/-1">
+              <div>
+                <label class="lbl">Exam title</label>
+                <input type="text" id="builderTitle" value="Untitled Exam">
+              </div>
+              <div>
+                <label class="lbl">Subject</label>
+                <input type="text" id="builderSubject" placeholder="e.g. Business Studies">
+              </div>
+            </div>
+            <div>
+              <label class="lbl">Level</label>
+              <select id="builderLevel">
+                <option>IGCSE</option>
+                <option>AS</option>
+                <option>IAL</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Time (minutes)</label>
+              <input type="number" id="builderTime" value="60" min="15" max="180">
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <label class="check-row">
+              <input type="checkbox" id="builderAnswerKey" checked>
+              <span class="text-sm">Answer key</span>
+            </label>
+            <label class="check-row">
+              <input type="checkbox" id="builderMarkScheme" checked>
+              <span class="text-sm">Mark scheme</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div id="builderSections"></div>
+      <button class="btn btn-secondary w-full mt-2" onclick="addBuilderSection()">+ Add Section</button>
+
+      <div class="card mt-3">
+        <div class="card-body">
+          <div id="builderSummary" class="text-sm text-gray">No questions selected yet</div>
+          <div id="builderDiffChart" class="mt-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== EXPORT ==================== -->
+<div class="page" id="page-export">
+  <div class="page-head">
+    <div>
+      <div class="page-title">📤 Export Exams</div>
+      <div class="page-sub">Export student papers, teacher versions, and answer keys</div>
+    </div>
+  </div>
+
+  <div id="exportEmpty" class="card" style="text-align:center;padding:3rem;color:var(--gray-400)">
+    <div style="font-size:2.5rem;margin-bottom:.75rem">📤</div>
+    <p class="font-medium">No exams to export yet</p>
+    <p class="text-sm mt-1">Generate questions or build an exam first.</p>
+  </div>
+
+  <div id="exportContent" class="export-grid hidden">
+    <div>
+      <h3 class="font-semibold text-sm text-gray mb-2">Select an exam</h3>
+      <div id="exportExamList"></div>
+    </div>
+    <div id="exportOptions"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const QUESTION_TYPE_DEFS = [
+  {id:'MCQ',label:'Multiple Choice Questions',defaultCount:5},
+  {id:'case_study_mcq',label:'Case-Study MCQ',defaultCount:3},
+  {id:'short_answer',label:'Short Answer Questions',defaultCount:3},
+  {id:'case_study_short',label:'Case-Study Short Answer',defaultCount:2},
+  {id:'data_response',label:'Data-Response Questions',defaultCount:1},
+  {id:'calculation',label:'Calculation Questions',defaultCount:2},
+  {id:'long_answer',label:'Long Answer Questions',defaultCount:2},
+  {id:'essay',label:'Essay Questions',defaultCount:1},
+  {id:'full_case_study',label:'Full Case Study Section',defaultCount:1},
+];
+
+const TYPE_LABELS = {
+  MCQ:'Multiple Choice',case_study_mcq:'Case-Study MCQ',short_answer:'Short Answer',case_study_short:'Case-Study',
+  data_response:'Data-Response',calculation:'Calculation',long_answer:'Long Answer',
+  essay:'Essay',full_case_study:'Full Case Study',mixed_paper:'Mixed Paper'
+};
+
+let selectedLevel = 'IGCSE';
+let selectedTypes = {MCQ:5, short_answer:3};
+let currentExam = null;
+let editingQId = null;
+
+function loadQuestions(){try{return JSON.parse(localStorage.getItem('eqg_questions')||'[]')}catch{return[]}}
+function loadExams(){try{return JSON.parse(localStorage.getItem('eqg_exams')||'[]')}catch{return[]}}
+function saveQuestions(qs){localStorage.setItem('eqg_questions',JSON.stringify(qs))}
+function saveExams(es){localStorage.setItem('eqg_exams',JSON.stringify(es))}
+function getApiKey(){return localStorage.getItem('eqg_apikey')||''}
+function getModel(){return localStorage.getItem('eqg_model')||'llama-3.3-70b-versatile'}
+
+// ============================================================
+// NAV
+// ============================================================
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  if(id==='dashboard')updateDashboard();
+  if(id==='questions')renderBank();
+  if(id==='builder')renderBuilder();
+  if(id==='export')renderExport();
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+function openModal(id){document.getElementById(id).classList.add('active')}
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+function showApiKeyModal(){
+  document.getElementById('apiKeyInput').value=getApiKey();
+  document.getElementById('geminiModel').value=getModel();
+  openModal('apiKeyModal');
+}
+function saveApiKey(){
+  const k=document.getElementById('apiKeyInput').value.trim();
+  if(!k){alert('Please enter your API key');return;}
+  localStorage.setItem('eqg_apikey',k);
+  localStorage.setItem('eqg_model',document.getElementById('geminiModel').value);
+  closeModal('apiKeyModal');
+  showToast('API key saved','green');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg,color='blue'){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText=`position:fixed;bottom:1.25rem;right:1.25rem;z-index:300;background:${color==='green'?'#16a34a':color==='red'?'#dc2626':'#2563eb'};color:#fff;padding:.625rem 1.125rem;border-radius:8px;font-size:.875rem;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.2);animation:toastIn .25s ease`;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},2500);
+}
+const toastStyle=document.createElement('style');
+toastStyle.textContent='@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}';
+document.head.appendChild(toastStyle);
+
+// ============================================================
+// GENERATE PAGE INIT
+// ============================================================
+function initGeneratePage(){
+  const list=document.getElementById('questionTypeList');
+  list.innerHTML='';
+  QUESTION_TYPE_DEFS.forEach(def=>{
+    const selected=def.id in selectedTypes;
+    const row=document.createElement('div');
+    row.className='type-row'+(selected?' selected':'');
+    row.id='typerow-'+def.id;
+    row.innerHTML=`
+      <label class="check-row flex-1" style="cursor:pointer">
+        <input type="checkbox" ${selected?'checked':''} onchange="toggleType('${def.id}',this.checked)">
+        <span class="font-medium" style="font-size:.875rem">${def.label}</span>
+      </label>
+      <div class="type-count" id="typecount-${def.id}" style="${selected?'':'display:none'}">
+        <span class="text-xs text-gray">Count:</span>
+        <input type="number" min="1" max="20" value="${selectedTypes[def.id]||def.defaultCount}" style="width:56px" onchange="selectedTypes['${def.id}']=parseInt(this.value)||1;updateGenSummary()">
+      </div>`;
+    list.appendChild(row);
+  });
+  updateGenSummary();
+
+  document.getElementById('pastedContent').addEventListener('input',updateWordCount);
+
+  initImagePaste();
+
+  // Configure PDF.js worker
+  if(typeof pdfjsLib!=='undefined'){
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  document.getElementById('includeRW').addEventListener('change',function(){
+    document.getElementById('rwOptions').style.display=this.checked?'':'none';
+  });
+}
+
+function updateWordCount(){
+  const words=document.getElementById('pastedContent').value.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('contentWordCount').textContent=words+' words';
+}
+
+// Unified drop zone handlers
+function mainDragOver(e){
+  e.preventDefault();
+  document.getElementById('mainDropZone').classList.add('drag-active');
+}
+function mainDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget))
+    document.getElementById('mainDropZone').classList.remove('drag-active');
+}
+function mainDrop(e){
+  e.preventDefault();
+  document.getElementById('mainDropZone').classList.remove('drag-active');
+  handleMainFiles(e.dataTransfer.files);
+}
+function handleMainFiles(files){
+  Array.from(files).forEach(file=>{
+    if(file.type==='application/pdf'||file.name.endsWith('.pdf')){
+      handlePdfFile(file);
+    } else if(file.type.startsWith('image/')){
+      addImageFile(file);
+    } else if(file.type==='text/plain'){
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const ta=document.getElementById('pastedContent');
+        ta.value=(ta.value?ta.value+'\n\n':'')+ev.target.result;
+        updateWordCount();
+        showToast('Text file loaded','green');
+      };
+      reader.readAsText(file);
+    }
+  });
+  // reset so same file can be re-selected
+  document.getElementById('mainFileInput').value='';
+}
+
+function toggleUrlInput(){
+  const row=document.getElementById('urlInputRow');
+  const visible=row.style.display!=='none';
+  row.style.display=visible?'none':'block';
+  if(!visible)setTimeout(()=>document.getElementById('websiteUrl').focus(),50);
+}
+
+async function fetchWebsiteContent(){
+  const url=document.getElementById('websiteUrl').value.trim();
+  const st=document.getElementById('urlStatus');
+  if(!url){st.textContent='Please enter a URL.';st.style.cssText='color:#d97706;display:block';return;}
+  st.textContent='Fetching…';st.style.cssText='color:#1d4ed8;display:block';
+  try{
+    // Try direct fetch first; many sites block CORS so we fallback gracefully
+    const resp=await fetch(url,{mode:'cors'});
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const html=await resp.text();
+    const doc=new DOMParser().parseFromString(html,'text/html');
+    // Strip scripts/styles, get readable text
+    doc.querySelectorAll('script,style,nav,footer,header').forEach(el=>el.remove());
+    const text=(doc.body?.innerText||doc.body?.textContent||'').replace(/\s{3,}/g,'\n\n').trim();
+    if(!text)throw new Error('No readable text found on page');
+    const ta=document.getElementById('pastedContent');
+    ta.value=(ta.value?ta.value+'\n\n---\n\n':'')+text.slice(0,8000);
+    updateWordCount();
+    st.textContent=`✅ Loaded ${text.split(/\s+/).length.toLocaleString()} words from page`;
+    st.style.cssText='color:#15803d;display:block';
+    ta.scrollIntoView({behavior:'smooth',block:'center'});
+  }catch(err){
+    st.textContent='⚠️ Could not fetch this site (CORS blocked). Open the page, select all text (Ctrl+A), copy, then click "Copied text" below.';
+    st.style.cssText='color:#d97706;display:block;font-size:.8rem';
+  }
+}
+
+async function pasteClipboardText(){
+  try{
+    const text=await navigator.clipboard.readText();
+    if(!text.trim()){showToast('Clipboard is empty or contains no text','amber');return;}
+    const ta=document.getElementById('pastedContent');
+    ta.value=(ta.value?ta.value+'\n\n':'')+text;
+    updateWordCount();
+    showToast('Clipboard text added','green');
+    ta.scrollIntoView({behavior:'smooth',block:'center'});
+  }catch{
+    showToast('Could not read clipboard — paste manually with Ctrl+V in the text box below','amber');
+  }
+}
+
+
+async function handlePdfFile(file){
+  if(!file)return;
+  if(file.type!=='application/pdf'){showPdfStatus('Please select a PDF file.','red');return;}
+  if(typeof pdfjsLib==='undefined'){showPdfStatus('PDF library not loaded. Check your internet connection.','red');return;}
+
+  showPdfStatus('⏳ Reading PDF…','blue');
+
+  try{
+    const arrayBuffer=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+    const numPages=pdf.numPages;
+    let fullText='';
+
+    for(let i=1;i<=numPages;i++){
+      const page=await pdf.getPage(i);
+      const content=await page.getTextContent();
+      const pageText=content.items.map(item=>item.str).join(' ');
+      fullText+=pageText+'\n\n';
+    }
+
+    fullText=fullText.replace(/\s{3,}/g,' ').replace(/\n{3,}/g,'\n\n').trim();
+
+    if(!fullText.trim()){
+      showPdfStatus('⚠️ This PDF is image-based (scanned). The free Groq models cannot read images. Please open the PDF, select all text (Ctrl+A), copy it (Ctrl+C), and paste it into the text box below.','amber');
+      return;
+    }
+
+    document.getElementById('pastedContent').value=fullText;
+    updateWordCount();
+    const words=fullText.trim().split(/\s+/).filter(Boolean).length;
+    showPdfStatus('','green'); // hide old status bar
+    const pdfId='pdf-'+Date.now();
+    uploadedSources.push({id:pdfId,type:'pdf',name:file.name||'Document.pdf',meta:`${numPages} page${numPages!==1?'s':''} · ${words.toLocaleString()} words`,statusText:'✅ Text extracted',statusColor:'#15803d',extractedText:fullText});
+    renderSources();
+    document.getElementById('pastedContent').scrollIntoView({behavior:'smooth',block:'center'});
+
+  }catch(err){
+    showPdfStatus('❌ Failed to read PDF: '+err.message,'red');
+  }
+}
+
+
+// ============================================================
+// IMAGE PASTE / DROP
+// ============================================================
+let pastedImages=[]; // [{id,base64,mimeType}] — kept for analyzeImage pipeline
+let uploadedSources=[]; // [{id,type:'pdf'|'image',name,meta,base64,mimeType,statusText,statusColor}]
+
+function initImagePaste(){
+  document.addEventListener('paste',e=>{
+    const items=e.clipboardData?.items||[];
+    let found=false;
+    for(const item of items){
+      if(item.type.startsWith('image/')){
+        found=true;
+        const file=item.getAsFile();
+        if(file)addImageFile(file);
+      }
+    }
+    if(found)e.preventDefault();
+  });
+}
+
+function handleImgFiles(files){
+  Array.from(files).forEach(addImageFile);
+  document.getElementById('imgFileInput').value='';
+}
+
+
+function addImageFile(file){
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const dataUrl=ev.target.result;
+    const base64=dataUrl.split(',')[1];
+    const id='img-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);
+    const mimeType=file.type||'image/jpeg';
+    const imgObj={id,base64,mimeType};
+    pastedImages.push(imgObj);
+    const imgNum=pastedImages.length;
+    const srcName=file.name&&!file.name.startsWith('image.')?file.name:`Image ${imgNum}`;
+    uploadedSources.push({id,type:'image',name:srcName,meta:'Analysing…',base64,mimeType,statusText:'⏳ Analysing',statusColor:'#1d4ed8'});
+    renderSources();
+    analyzeImage(imgObj);
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderSources(){
+  const box=document.getElementById('sourcesList');
+  if(!box)return;
+  const empty=document.getElementById('sourcesEmpty');
+  if(uploadedSources.length===0){
+    box.innerHTML='';
+    if(empty)empty.style.display='flex';
+    return;
+  }
+  if(empty)empty.style.display='none';
+  box.innerHTML=uploadedSources.map(src=>{
+    const thumb=src.type==='image'
+      ?`<div class="source-thumb type-image"><img src="data:${src.mimeType};base64,${src.base64}" alt=""></div>`
+      :`<div class="source-thumb type-pdf">📄</div>`;
+    return `<div class="source-row">
+      ${thumb}
+      <div class="source-info">
+        <div class="source-name" title="${src.name}">${src.name}</div>
+        <div style="display:flex;gap:.5rem;align-items:center;margin-top:.1rem">
+          <span class="source-meta">${src.meta||''}</span>
+          ${src.statusText?`<span class="source-status" style="color:${src.statusColor||'var(--gray-400)'}">${src.statusText}</span>`:''}
+        </div>
+      </div>
+      <button class="source-remove" onclick="removeSource('${src.id}')" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function removeSource(id){
+  const src=uploadedSources.find(s=>s.id===id);
+  if(src&&src.extractedText){
+    const ta=document.getElementById('pastedContent');
+    let content=ta.value;
+    const text=src.extractedText;
+    // Remove with preceding separator
+    if(content.includes('\n\n---\n\n'+text)){
+      content=content.replace('\n\n---\n\n'+text,'');
+    // Remove with trailing separator
+    } else if(content.includes(text+'\n\n---\n\n')){
+      content=content.replace(text+'\n\n---\n\n','');
+    // Remove standalone
+    } else {
+      content=content.replace(text,'');
+    }
+    ta.value=content.trim();
+    updateWordCount();
+  }
+  pastedImages=pastedImages.filter(i=>i.id!==id);
+  uploadedSources=uploadedSources.filter(s=>s.id!==id);
+  renderSources();
+}
+
+// keep old name as alias so any stale calls don't break
+function renderImgThumbs(){renderSources();}
+function removeImage(id){removeSource(id);}
+
+function updateSourceStatus(id,statusText,statusColor,meta){
+  const src=uploadedSources.find(s=>s.id===id);
+  if(!src)return;
+  if(statusText!==undefined)src.statusText=statusText;
+  if(statusColor!==undefined)src.statusColor=statusColor;
+  if(meta!==undefined)src.meta=meta;
+  renderSources();
+}
+
+async function analyzeImage(img){
+  const apiKey=getApiKey();
+  if(!apiKey){
+    updateSourceStatus(img.id,'⚠️ No API key','#d97706');
+    showApiKeyModal();
+    return;
+  }
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'content-type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({
+        model:'meta-llama/llama-4-scout-17b-16e-instruct',
+        max_tokens:2000,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image_url',image_url:{url:'data:'+img.mimeType+';base64,'+img.base64}},
+            {type:'text',text:'Extract all educational content from this image for a teacher who will create exam questions from it. Return PLAIN TEXT ONLY — no markdown, no # symbols, no **, no bullet dashes. Use blank lines to separate sections.\n\nInclude: all visible text (headings written as plain text, body text, captions, labels); all numbers and statistics; for charts/graphs state the title, axes labels, units, and key data values as plain sentences; for tables reproduce every row as tab-separated plain text; for diagrams describe labels and relationships in plain sentences; any equations or definitions. Be concise — omit page numbers, running headers, and decorative text.'}
+          ]
+        }]
+      })
+    });
+    if(!resp.ok){
+      const err=await resp.json();
+      throw new Error(err.error?.message||'Vision API error');
+    }
+    const data=await resp.json();
+    const extracted=data.choices[0].message.content.trim();
+    const words=extracted.trim().split(/\s+/).filter(Boolean).length;
+    const ta=document.getElementById('pastedContent');
+    ta.value=(ta.value?ta.value+'\n\n---\n\n':'')+extracted;
+    updateWordCount();
+    // Store so we can remove it later
+    const src=uploadedSources.find(s=>s.id===img.id);
+    if(src)src.extractedText=extracted;
+    updateSourceStatus(img.id,'✅ Done','#15803d',`${words.toLocaleString()} words extracted`);
+    ta.scrollIntoView({behavior:'smooth',block:'center'});
+  }catch(err){
+    updateSourceStatus(img.id,'❌ Failed','#dc2626',err.message.slice(0,60));
+  }
+}
+
+function showImgStatus(msg,color){
+  const el=document.getElementById('imgStatus');
+  if(!el)return;
+  const colors={blue:'color:#1d4ed8',green:'color:#15803d',red:'color:#dc2626',amber:'color:#d97706'};
+  el.style.cssText=colors[color]||'';
+  el.textContent=msg;
+  el.style.display='block';
+}
+
+function showPdfStatus(msg,color){
+  const el=document.getElementById('pdfStatus');
+  const colors={blue:'color:#1d4ed8',green:'color:#15803d',red:'color:#dc2626',amber:'color:#d97706'};
+  el.style.cssText=colors[color]||'';
+  el.textContent=msg;
+  el.style.display='block';
+}
+
+function resetGenerate(){
+  // Clear file inputs
+  document.getElementById('pdfFileInput').value='';
+  document.getElementById('imgFileInput').value='';
+  document.getElementById('mainFileInput').value='';
+
+  // Clear drop zone statuses
+  ['pdfStatus','imgStatus','urlStatus'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.style.display='none';el.textContent='';}
+  });
+  document.getElementById('mainDropZone').classList.remove('drag-active');
+  document.getElementById('urlInputRow').style.display='none';
+  document.getElementById('websiteUrl').value='';
+
+  // Clear all sources
+  pastedImages=[];
+  uploadedSources=[];
+  renderSources();
+
+  // Clear text content
+  document.getElementById('pastedContent').value='';
+  document.getElementById('contentWordCount').textContent='0 words';
+
+  // Clear topic/instructions
+  document.getElementById('topicName').value='';
+  document.getElementById('teacherInstr').value='';
+  document.getElementById('syllabusRef').value='';
+  document.getElementById('keyTermsInclude').value='';
+  document.getElementById('keyTermsAvoid').value='';
+  document.getElementById('learningObj').value='';
+  document.getElementById('rwRegion').value='';
+  document.getElementById('rwContext').value='';
+
+  // Hide results
+  const results=document.getElementById('genResults');
+  results.classList.add('hidden');
+  results.innerHTML='';
+
+  // Hide error
+  hideGenError();
+
+  // Reset current exam
+  currentExam=null;
+
+  // Scroll back to top of page
+  document.getElementById('page-generate').scrollIntoView({behavior:'smooth',block:'start'});
+
+  showToast('Ready for a new generation','green');
+}
+
+function toggleType(id,checked){
+  const def=QUESTION_TYPE_DEFS.find(d=>d.id===id);
+  if(checked){selectedTypes[id]=def.defaultCount;}
+  else{delete selectedTypes[id];}
+  document.getElementById('typerow-'+id).classList.toggle('selected',checked);
+  const countEl=document.getElementById('typecount-'+id);
+  if(countEl)countEl.style.display=checked?'flex':'none';
+  updateGenSummary();
+}
+
+function selectLevel(level){
+  selectedLevel=level;
+  ['IGCSE','AS','IAL'].forEach(l=>{
+    document.getElementById('lvl-'+l).classList.toggle('selected',l===level);
+  });
+}
+
+function updateGenSummary(){
+  const types=Object.keys(selectedTypes);
+  const total=Object.values(selectedTypes).reduce((a,b)=>a+b,0);
+  const btn=document.getElementById('generateBtn');
+  const s1=document.getElementById('genSummary');
+  const s2=document.getElementById('genSummary2');
+  if(types.length===0){
+    s1.textContent='Select at least one question type to begin';
+    s2.textContent='';
+    btn.disabled=true;
+  } else {
+    s1.textContent=`Ready to generate ${total} question${total!==1?'s':''} across ${types.length} type${types.length!==1?'s':''}`;
+    s2.textContent=`${document.getElementById('subject').value} · ${selectedLevel} · ${document.getElementById('difficulty').value} difficulty`;
+    btn.disabled=false;
+  }
+}
+
+function toggleSection(id){
+  const el=document.getElementById(id);
+  el.classList.toggle('hidden');
+}
+
+// ============================================================
+// BUILD PROMPT
+// ============================================================
+function buildPrompt(settings){
+  const levelGuidance={
+    IGCSE:`IGCSE: Use clear accessible English suitable for ESL learners. Shorter sentences. Command words: Define, Identify, State, Describe, Outline, Explain, Calculate. Keep case studies short (3-5 sentences). Direct application. Less abstract evaluation. Mark allocations typically 1-6 marks.`,
+    AS:`AS Level: More developed explanation required. Apply knowledge to case studies. Include cause-and-effect reasoning and analysis. Some evaluation where appropriate. Strong use of subject terminology. Command words: Explain, Analyse, Apply, Compare, Calculate, Discuss, Assess. Mark allocations 2-10 marks.`,
+    IAL:`IAL/A Level: Strong analysis AND evaluation required. Judgement, trade-offs, decision-making. Longer case studies with real-world application. Balanced arguments with clear conclusions. Command words: Analyse, Evaluate, Assess, Discuss, To what extent, Recommend, Justify, Critically assess. Mark allocations 4-20 marks. Use level-based mark schemes.`
+  };
+  const diffGuidance={
+    easy:`Easy: Focus on recall, definitions, identification, basic understanding. Command words: Define, State, Identify, Describe, Outline.`,
+    medium:`Medium: Focus on explanation, application, cause and effect, advantages/disadvantages. Command words: Explain, Analyse, Compare, Calculate, Apply.`,
+    difficult:`Difficult: Focus on evaluation, judgement, decision-making, extended analysis, trade-offs. Command words: Evaluate, Assess, Discuss, Justify, Recommend, To what extent.`,
+    mixed:`Mixed: Include easy (30% recall/define), medium (40% explain/apply), and difficult (30% evaluate/assess). Label each clearly.`
+  };
+  const typeDetails={
+    MCQ:`MCQ: 4 options (A,B,C,D). One correct. Three plausible distractors — NOT silly. Balanced option lengths. Vary which letter is correct. Include explanation of correct answer.`,
+    case_study_mcq:`Case-Study MCQ: Write a short case study or scenario (3-5 sentences) followed by 1-2 MCQ questions that require students to apply knowledge to that specific context. 4 options (A,B,C,D). One correct. Distractors must be plausible within the scenario. Include explanation of correct answer referencing the case study.`,
+    short_answer:`Short Answer: Mix of definition, scenario-based, calculation, and application questions. 2-6 marks each. Include model answer and mark scheme.`,
+    case_study_short:`Case-Study Short Answer: Include a short original case study (3-6 sentences). Question must require students to apply knowledge TO the specific case. 3-8 marks each.`,
+    data_response:`Data-Response: Include a short data extract, table, or statistics. Questions ask students to interpret, calculate, or analyse. Include calculation where suitable. ALWAYS include a "graph" field with a bar, line, or pie chart visualising the data provided in the question.`,
+    calculation:`Calculation: Include all necessary data/figures. Show formula. Worked answer with steps. Mark scheme awards marks for method AND correct answer. Where the calculation involves data that could be shown visually (e.g. costs over time, revenue figures, index numbers), include a "graph" field with a bar or line chart.`,
+    long_answer:`Long Answer: 6-15 marks. May include short case study. Requires structured response with analysis. For IAL must include evaluation. Use level-based mark scheme for 8+ marks.`,
+    essay:`Essay: 12-20 marks. No case study needed. Sustained argument. For IAL: balanced evaluation with conclusion. Level-based mark scheme.`,
+    full_case_study:`Full Case Study Section: One original case study (150-250 words) with 4-6 linked questions of increasing difficulty. Mix of marks. Total 20-30 marks. Full mark scheme for every question.`
+  };
+
+  const rwInstructions=settings.includeRW?`
+REAL-WORLD EXAMPLES:
+- Find relevant real-world examples connected to the topic from the pasted content
+- Timeframe: ${settings.rwTimeframe==='current'?'Current/modern only':settings.rwTimeframe==='past'?'Past events only':'Mix of current and past'}
+- Style: ${settings.rwStyle}
+- Preferred region: ${settings.rwRegion||'Global'}
+- Preferred context: ${settings.rwContext||'Any'}
+- DO NOT invent fake facts. If uncertain, use a fictional named scenario OR label as "teacher verification recommended"
+- Add a short source note for any real-world example
+- Keep examples exam-friendly (not long news summaries)
+`:`Do NOT include real-world examples. Use fictional named scenarios instead.`;
+
+  const selectedTypeList=Object.entries(settings.questionCounts)
+    .map(([t,n])=>`- ${n} x ${t}: ${typeDetails[t]||t}`)
+    .join('\n');
+
+  return `You are an expert exam question generator for ${settings.examLevel} level ${settings.subject}.
+
+PASTED CONTENT TO ANALYSE:
+---
+${settings.pastedContent}
+---
+
+Analyse the above content. Extract key concepts, definitions, theories, formulas, and skills. Then generate ORIGINAL exam-style questions. Do NOT copy large sections of the text verbatim.
+
+SETTINGS:
+- Subject: ${settings.subject}
+- Exam Level: ${settings.examLevel}
+- Topic: ${settings.topic||'As identified from content'}
+- Exam Board: ${settings.examBoard}
+- Difficulty: ${settings.difficulty}
+- Include Answers: ${settings.inclAnswers}
+- Include Mark Schemes: ${settings.inclMarkScheme}
+${settings.syllabusRef?'- Syllabus Ref: '+settings.syllabusRef:''}
+${settings.keyTermsInclude?'- Key Terms to Include: '+settings.keyTermsInclude:''}
+${settings.keyTermsAvoid?'- Key Terms to AVOID: '+settings.keyTermsAvoid:''}
+${settings.teacherInstr?'- Teacher Instructions: '+settings.teacherInstr:''}
+
+LEVEL GUIDANCE:
+${levelGuidance[settings.examLevel]}
+
+DIFFICULTY GUIDANCE:
+${diffGuidance[settings.difficulty]}
+
+${rwInstructions}
+
+GENERATE THESE QUESTION TYPES (in separate sections):
+${selectedTypeList}
+
+OUTPUT FORMAT — Return ONLY a valid JSON object, no markdown fences:
+{
+  "topic": "identified topic",
+  "subject": "${settings.subject}",
+  "examLevel": "${settings.examLevel}",
+  "sections": [
+    {
+      "title": "Section A: Multiple Choice Questions",
+      "questions": [
+        {
+          "id": "unique-uuid-string",
+          "number": 1,
+          "subject": "${settings.subject}",
+          "topic": "topic",
+          "examLevel": "${settings.examLevel}",
+          "difficulty": "easy|medium|difficult",
+          "questionType": "MCQ|case_study_mcq|short_answer|case_study_short|data_response|calculation|long_answer|essay|full_case_study",
+          "commandWord": "Define|Explain|Evaluate|etc",
+          "marks": 1,
+          "questionText": "Full question text",
+          "caseStudy": "Optional case study text — omit key if no case study",
+          "mcqOptions": [{"letter":"A","text":"option"},{"letter":"B","text":"option"},{"letter":"C","text":"option"},{"letter":"D","text":"option"}],
+          "correctAnswer": "A",
+          "mcqExplanation": "Explanation of correct answer — MCQ only",
+          "suggestedAnswer": "Full model answer / indicative content",
+          "markScheme": "Mark scheme as plain text OR array of {level,descriptor,marks} for levelled schemes",
+          "skillsAssessed": ["Knowledge","Application","Analysis"],
+          "realWorldExample": "Optional: name of real-world example used",
+          "sourceNote": "Optional: source reference",
+          "teacherVerificationNote": "Optional: verification warning",
+          "graph": {
+            "type": "bar|line|pie|doughnut|scatter",
+            "title": "Chart title",
+            "xLabel": "X axis label",
+            "yLabel": "Y axis label",
+            "labels": ["Label1","Label2","Label3"],
+            "datasets": [{"label":"Series name","data":[10,20,30]}]
+          }
+        }
+      ]
+    }
+  ]
+}
+
+GRAPH RULES:
+- The "graph" field is optional. Only include it when a chart genuinely aids the question (data-response always; calculation and case-study questions when numeric data is present).
+- Use "bar" for comparing categories, "line" for trends over time, "pie"/"doughnut" for proportions, "scatter" for relationships between two variables.
+- All data values must be realistic and consistent with the question text.
+- "labels" must match the number of data points in every dataset.
+- Omit the "graph" field entirely for MCQ, short answer, essay, and long answer questions unless they explicitly reference data.
+
+QUALITY CHECKS before outputting:
+- Questions match selected level complexity
+- Command words appropriate for level and difficulty
+- Marks match question type and difficulty
+- Model answers answer the actual questions asked
+- MCQ distractors are plausible and balanced
+- MCQ correct answer varies in letter position across questions
+- IGCSE questions use accessible English
+- IAL questions include evaluation where required
+- No direct copying from pasted content
+- Return ONLY the JSON object`;
+}
+
+// ============================================================
+// GENERATE API CALL
+// ============================================================
+async function handleGenerate(){
+  const content=document.getElementById('pastedContent').value.trim();
+  if(!content){showGenError('Please paste some content before generating.');return;}
+  const types=Object.keys(selectedTypes);
+  if(types.length===0){showGenError('Please select at least one question type.');return;}
+  const apiKey=getApiKey();
+  if(!apiKey){
+    showApiKeyModal();
+    return;
+  }
+
+  const settings={
+    pastedContent:content,
+    subject:document.getElementById('subject').value,
+    examLevel:selectedLevel,
+    topic:document.getElementById('topicName').value,
+    examBoard:document.getElementById('examBoard').value,
+    difficulty:document.getElementById('difficulty').value,
+    questionCounts:{...selectedTypes},
+    includeRW:document.getElementById('includeRW').checked,
+    rwTimeframe:document.getElementById('rwTimeframe').value,
+    rwStyle:document.getElementById('rwStyle').value,
+    rwRegion:document.getElementById('rwRegion').value,
+    rwContext:document.getElementById('rwContext').value,
+    syllabusRef:document.getElementById('syllabusRef').value,
+    keyTermsInclude:document.getElementById('keyTermsInclude').value,
+    keyTermsAvoid:document.getElementById('keyTermsAvoid').value,
+    learningObj:document.getElementById('learningObj').value,
+    teacherInstr:document.getElementById('teacherInstr').value,
+    inclAnswers:document.getElementById('inclAnswers').checked,
+    inclMarkScheme:document.getElementById('inclMarkScheme').checked,
+  };
+
+  document.getElementById('loadingOverlay').classList.add('active');
+  document.getElementById('loadingSub').textContent='Analysing content and creating mark schemes. This takes 15–30 seconds.';
+  hideGenError();
+
+  // Auto-switch to large-context model when content is long
+  const contentWords=settings.content.trim().split(/\s+/).filter(Boolean).length;
+  const needsLargeCtx=contentWords>2000;
+  const chosenModel=needsLargeCtx?'mixtral-8x7b-32768':getModel();
+  if(needsLargeCtx){
+    showToast(`Large content (${contentWords.toLocaleString()} words) — using Mixtral 32K`,'blue');
+  }
+
+  // Abort controller for timeout + cancel button
+  window._genAbortController=new AbortController();
+  const timeoutId=setTimeout(()=>{
+    window._genAbortController.abort();
+    document.getElementById('loadingSub').textContent='Request timed out. Try fewer question types or shorter content.';
+  },90000);
+
+  // Update message after 30s so user knows it hasn't frozen
+  const slowMsgId=setTimeout(()=>{
+    document.getElementById('loadingSub').textContent='Still working… large content can take up to 90 seconds on the free tier.';
+  },30000);
+
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      signal:window._genAbortController.signal,
+      headers:{'content-type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({
+        model:chosenModel,
+        max_tokens:8000,
+        temperature:0.7,
+        messages:[{role:'user',content:buildPrompt(settings)}]
+      })
+    });
+    clearTimeout(timeoutId);
+    clearTimeout(slowMsgId);
+    if(!resp.ok){
+      const err=await resp.json();
+      throw new Error(err.error?.message||'API error '+resp.status);
+    }
+    const data=await resp.json();
+    let raw=data.choices[0].message.content;
+    raw=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
+    let result;
+    try{
+      result=JSON.parse(raw);
+    }catch{
+      // Try to salvage truncated JSON by finding the last complete section
+      const truncated=raw.lastIndexOf(']}');
+      if(truncated>-1){
+        try{result=JSON.parse(raw.slice(0,truncated+2)+'}');}catch{/*fall through*/}
+      }
+      if(!result)throw new Error('The AI response was cut off or malformed. Try selecting fewer question types or reducing content length.');
+    }
+    processGeneratedExam(result,settings);
+  }catch(e){
+    clearTimeout(timeoutId);
+    clearTimeout(slowMsgId);
+    const msg=e.name==='AbortError'
+      ?'Generation cancelled.'
+      :'Generation failed: '+e.message;
+    showGenError(msg);
+  }finally{
+    document.getElementById('loadingOverlay').classList.remove('active');
+    window._genAbortController=null;
+  }
+}
+
+function cancelGenerate(){
+  if(window._genAbortController){
+    window._genAbortController.abort();
+  }
+}
+
+function showGenError(msg){
+  const el=document.getElementById('genErrorAlert');
+  el.className='alert alert-red mb-3';
+  el.innerHTML='<span class="alert-icon">❌</span><div>'+msg+'</div>';
+}
+function hideGenError(){
+  const el=document.getElementById('genErrorAlert');
+  el.className='hidden';
+  el.innerHTML='';
+}
+
+// ============================================================
+// PROCESS & RENDER RESULTS
+// ============================================================
+function processGeneratedExam(result,settings){
+  const examId='exam-'+Date.now();
+  const exam={
+    id:examId,
+    title:(result.subject||settings.subject)+' — '+(result.topic||settings.topic||'Exam'),
+    subject:result.subject||settings.subject,
+    topic:result.topic||settings.topic||'',
+    examLevel:settings.examLevel,
+    examBoard:settings.examBoard,
+    dateCreated:new Date().toISOString(),
+    sections:result.sections||[],
+    settings
+  };
+
+  let qNum=1;
+  const allQs=[];
+  exam.sections.forEach(section=>{
+    section.questions.forEach(q=>{
+      if(!q.id)q.id='q-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+      if(!q.dateCreated)q.dateCreated=new Date().toISOString();
+      if(!q.tags)q.tags=[];
+      q.number=qNum++;
+      q.isCaseStudyBased=!!q.caseStudy;
+      q.hasRealWorldExample=!!q.realWorldExample;
+      q.examId=examId;
+      allQs.push(q);
+    });
+  });
+
+  // Save
+  const exams=loadExams();
+  exams.unshift(exam);
+  saveExams(exams);
+
+  const questions=loadQuestions();
+  const existingIds=new Set(questions.map(q=>q.id));
+  allQs.forEach(q=>{if(!existingIds.has(q.id))questions.push(q);});
+  saveQuestions(questions);
+
+  currentExam=exam;
+  renderGenResults(exam);
+  showToast('✅ '+allQs.length+' questions generated and saved!','green');
+}
+
+function renderGenResults(exam){
+  const container=document.getElementById('genResults');
+  container.classList.remove('hidden');
+  const totalQ=exam.sections.reduce((a,s)=>a+s.questions.length,0);
+  const totalM=exam.sections.reduce((a,s)=>a+s.questions.reduce((b,q)=>b+q.marks,0),0);
+
+  let html=`
+    <div class="alert alert-green"><span class="alert-icon">✅</span>
+      <div><strong>${totalQ} questions generated</strong> for ${exam.subject} · ${exam.examLevel} · ${totalM} total marks. All saved to Question Bank.</div>
+    </div>
+    <div class="flex gap-2 mb-3 flex-wrap">
+      <button class="btn btn-secondary btn-sm" onclick="toggleAllAnswers()">👁 Toggle Answers</button>
+      <button class="btn btn-secondary btn-sm" onclick="toggleAllMarkSchemes()">📋 Toggle Mark Schemes</button>
+      <button class="btn btn-secondary btn-sm" onclick="copyAllQuestions()">📋 Copy All</button>
+      <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print</button>
+      <button class="btn btn-primary btn-sm" onclick="showPage('export')">📤 Export →</button>
+    </div>`;
+
+  exam.sections.forEach(section=>{
+    html+=`<div class="section-divider"><h3>${section.title}</h3><div class="section-divider-line"></div><span class="text-xs text-gray">${section.questions.length}q · ${section.questions.reduce((a,q)=>a+q.marks,0)}m</span></div>`;
+    section.questions.forEach(q=>{
+      html+=renderQuestionCard(q,{showEdit:true,showRegen:true,showDelete:true});
+    });
+  });
+
+  container.innerHTML=html;
+  window._showAnswers=true;
+  window._showMS=false;
+  const allQs=exam.sections.flatMap(s=>s.questions);
+  renderCharts(allQs);
+}
+
+function renderQuestionCard(q,opts={}){
+  const diffBadge={easy:'badge-green',medium:'badge-yellow',difficult:'badge-red',mixed:'badge-violet'}[q.difficulty]||'badge-gray';
+  const levelBadge={IGCSE:'badge-blue',AS:'badge-indigo',IAL:'badge-violet'}[q.examLevel]||'badge-gray';
+
+  const mcqHtml=q.mcqOptions?`<div class="mcq-options">${q.mcqOptions.map(o=>`<div class="mcq-opt${o.letter===q.correctAnswer?' correct':''}"><span class="mcq-opt-letter">${o.letter}.</span><span>${o.text}</span>${o.letter===q.correctAnswer?'<span style="margin-left:auto">⭐</span>':''}</div>`).join('')}</div>`:'';
+
+  const caseStudyHtml=q.caseStudy?`<div class="case-study-box"><div class="case-study-label">📖 Case Study</div><p style="font-size:.875rem;color:var(--gray-700);line-height:1.6">${q.caseStudy}</p></div>`:'';
+
+  const chartHtml=q.graph?`<div class="chart-box"><div class="chart-label">📊 ${q.graph.title||'Chart'}</div><div class="chart-wrap"><canvas id="chart-${q.id}"></canvas></div></div>`:'';
+
+
+  const answerHtml=q.suggestedAnswer&&!q.mcqOptions?`<div class="answer-box answers-section"><div class="answer-label">✏️ Suggested Answer / Indicative Content</div><p style="font-size:.875rem;color:#1e3a8a;line-height:1.6;white-space:pre-wrap">${q.suggestedAnswer}</p></div>`:'';
+
+  const mcqExplHtml=q.mcqExplanation?`<div class="answer-box answers-section"><div class="answer-label">💡 Explanation</div><p style="font-size:.875rem;color:#1e3a8a">${q.mcqExplanation}</p></div>`:'';
+
+  const msText=Array.isArray(q.markScheme)?q.markScheme.map(l=>`<div style="display:flex;gap:.5rem;font-size:.875rem;margin-bottom:.25rem"><span style="font-weight:600;color:var(--purple);min-width:6rem">Level ${l.level} (${l.marks}):</span><span style="color:#4c1d95">${l.descriptor}</span></div>`).join(''):(`<p style="font-size:.875rem;color:#4c1d95;white-space:pre-wrap">${q.markScheme||''}</p>`);
+
+  const msHtml=q.markScheme?`<div class="mark-scheme-box ms-section hidden"><div class="mark-scheme-label">📋 Mark Scheme</div>${msText}</div>`:'';
+
+  const rwHtml=q.realWorldExample?`<div class="rw-note">🌍 <span><strong>Real-world example:</strong> ${q.realWorldExample}${q.sourceNote?' · <em>'+q.sourceNote+'</em>':''}</span></div>`:'';
+  const verifyHtml=q.teacherVerificationNote?`<div class="verify-note">⚠️ <span><strong>Teacher note:</strong> ${q.teacherVerificationNote}</span></div>`:'';
+
+  const actionsHtml=opts.showEdit||opts.showRegen||opts.showDelete?`
+    <div class="q-card-actions">
+      ${opts.showEdit?`<button class="btn btn-ghost btn-sm" onclick="openEditModal('${q.id}')" title="Edit">✏️</button>`:''}
+      ${opts.showRegen?`<button class="btn btn-ghost btn-sm" onclick="regenerateQuestion('${q.id}')" title="Regenerate">🔄</button>`:''}
+      ${opts.showDelete?`<button class="btn btn-ghost btn-sm" onclick="deleteQFromResults('${q.id}')" title="Delete" style="color:var(--red)">🗑️</button>`:''}
+    </div>`:'';
+
+  return `<div class="q-card" id="qcard-${q.id}">
+    <div class="q-card-header" onclick="toggleQCard('${q.id}')">
+      <div class="q-card-badges">
+        <span style="font-size:.8125rem;font-weight:700;color:var(--gray-600)">Q${q.number}</span>
+        <span class="badge ${levelBadge}">${q.examLevel}</span>
+        <span class="badge ${diffBadge}">${q.difficulty}</span>
+        <span class="badge badge-gray">${TYPE_LABELS[q.questionType]||q.questionType}</span>
+        <span class="badge badge-gray">${q.marks} mark${q.marks!==1?'s':''}</span>
+        ${q.realWorldExample?'<span class="badge badge-emerald">🌍 Real-world</span>':''}
+        ${q.caseStudy?'<span class="badge badge-cyan">📖 Case study</span>':''}
+      </div>
+      ${actionsHtml}
+    </div>
+    <div class="q-card-body" id="qbody-${q.id}">
+      <div style="font-size:.75rem;color:var(--gray-500);margin-bottom:.75rem;display:flex;flex-wrap:wrap;gap:.75rem">
+        <span><strong>Topic:</strong> ${q.topic||''}</span>
+        <span><strong>Command:</strong> ${q.commandWord||''}</span>
+        <span><strong>Skills:</strong> ${(q.skillsAssessed||[]).join(', ')}</span>
+      </div>
+      ${caseStudyHtml}
+      ${chartHtml}
+      <p class="question-text">${q.questionText}</p>
+      ${mcqHtml}
+      <div class="answers-section">${mcqExplHtml}${answerHtml}</div>
+      <div>
+        <button class="collapse-toggle" onclick="toggleMSForQ('${q.id}')">▾ Show Mark Scheme</button>
+        ${msHtml}
+      </div>
+      ${rwHtml}${verifyHtml}
+    </div>
+  </div>`;
+}
+
+function toggleQCard(id){
+  const body=document.getElementById('qbody-'+id);
+  if(body)body.style.display=body.style.display==='none'?'':'none';
+}
+
+const _chartInstances={};
+function renderCharts(questions){
+  if(typeof Chart==='undefined')return;
+  questions.forEach(q=>{
+    if(!q.graph)return;
+    const canvas=document.getElementById('chart-'+q.id);
+    if(!canvas)return;
+    if(_chartInstances[q.id]){_chartInstances[q.id].destroy();}
+    const g=q.graph;
+    const palette=['#2563eb','#16a34a','#d97706','#dc2626','#7c3aed','#0e7490'];
+    const datasets=(g.datasets||[]).map((ds,i)=>({
+      label:ds.label||'',
+      data:ds.data||[],
+      backgroundColor:g.type==='pie'||g.type==='doughnut'
+        ?(ds.data||[]).map((_,j)=>palette[j%palette.length])
+        :palette[i%palette.length]+'33',
+      borderColor:g.type==='pie'||g.type==='doughnut'
+        ?(ds.data||[]).map((_,j)=>palette[j%palette.length])
+        :palette[i%palette.length],
+      borderWidth:2,
+      fill:g.type==='line'?false:undefined,
+      tension:g.type==='line'?0.3:undefined,
+      pointRadius:g.type==='line'?4:undefined,
+    }));
+    _chartInstances[q.id]=new Chart(canvas,{
+      type:g.type||'bar',
+      data:{labels:g.labels||[],datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:datasets.length>1||(g.type==='pie'||g.type==='doughnut'),position:'top'},
+          title:{display:false}
+        },
+        scales:(g.type==='pie'||g.type==='doughnut')?{}:{
+          x:{title:{display:!!(g.xLabel),text:g.xLabel||''},grid:{color:'#f3f4f6'}},
+          y:{title:{display:!!(g.yLabel),text:g.yLabel||''},grid:{color:'#f3f4f6'},beginAtZero:true}
+        }
+      }
+    });
+  });
+}
+
+function toggleMSForQ(id){
+  const card=document.querySelector('#qcard-'+id+' .ms-section');
+  if(card){
+    card.classList.toggle('hidden');
+    const btn=document.querySelector('#qcard-'+id+' .collapse-toggle');
+    if(btn)btn.textContent=card.classList.contains('hidden')?'▾ Show Mark Scheme':'▴ Hide Mark Scheme';
+  }
+}
+
+let _answersVisible=true;
+function toggleAllAnswers(){
+  _answersVisible=!_answersVisible;
+  document.querySelectorAll('.answers-section').forEach(el=>el.style.display=_answersVisible?'':'none');
+}
+function toggleAllMarkSchemes(){
+  document.querySelectorAll('.ms-section').forEach(el=>{
+    el.classList.toggle('hidden');
+  });
+}
+
+function copyAllQuestions(){
+  let text='';
+  if(!currentExam)return;
+  text+=currentExam.title+'\n';
+  text+='Subject: '+currentExam.subject+' | Level: '+currentExam.examLevel+'\n\n';
+  currentExam.sections.forEach(s=>{
+    text+='═══ '+s.title.toUpperCase()+' ═══\n\n';
+    s.questions.forEach(q=>{
+      if(q.caseStudy)text+='Case Study:\n'+q.caseStudy+'\n\n';
+      text+='Q'+q.number+'. ['+q.marks+' marks] '+q.questionText+'\n';
+      if(q.mcqOptions)q.mcqOptions.forEach(o=>text+='  '+o.letter+'. '+o.text+'\n');
+      text+='Answer: '+q.suggestedAnswer+'\n\n';
+    });
+  });
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied to clipboard!','green'));
+}
+
+function deleteQFromResults(id){
+  if(!confirm('Remove this question?'))return;
+  const qs=loadQuestions().filter(q=>q.id!==id);
+  saveQuestions(qs);
+  if(currentExam){
+    currentExam.sections.forEach(s=>{s.questions=s.questions.filter(q=>q.id!==id);});
+    const exams=loadExams().map(e=>e.id===currentExam.id?currentExam:e);
+    saveExams(exams);
+  }
+  const card=document.getElementById('qcard-'+id);
+  if(card)card.remove();
+  showToast('Question removed','red');
+}
+
+// ============================================================
+// REGENERATE
+// ============================================================
+async function regenerateQuestion(id){
+  const apiKey=getApiKey();
+  if(!apiKey){showApiKeyModal();return;}
+  const qs=loadQuestions();
+  const q=qs.find(x=>x.id===id);
+  if(!q)return;
+
+  const card=document.getElementById('qcard-'+id);
+  if(card)card.style.opacity='.5';
+
+  const prompt=`You are an expert exam question generator for ${q.examLevel} ${q.subject}.
+
+Regenerate this question with DIFFERENT wording, a new case study or example if applicable. Keep the same: difficulty (${q.difficulty}), marks (${q.marks}), question type (${q.questionType}), exam level (${q.examLevel}).
+
+ORIGINAL QUESTION JSON:
+${JSON.stringify(q,null,2)}
+
+Return ONLY a single question JSON object with the same structure. No markdown.`;
+
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'content-type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({
+        model:getModel(),
+        max_tokens:3000,
+        temperature:0.7,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    let raw=data.choices[0].message.content.replace(/^```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
+    const newQ={...q,...JSON.parse(raw),id:q.id,number:q.number,dateCreated:q.dateCreated,examId:q.examId};
+    const updated=loadQuestions().map(x=>x.id===id?newQ:x);
+    saveQuestions(updated);
+    if(currentExam){
+      currentExam.sections.forEach(s=>{s.questions=s.questions.map(x=>x.id===id?newQ:x);});
+      saveExams(loadExams().map(e=>e.id===currentExam.id?currentExam:e));
+    }
+    if(card){
+      card.outerHTML=renderQuestionCard(newQ,{showEdit:true,showRegen:true,showDelete:true});
+    }
+    showToast('Question regenerated!','green');
+  }catch(e){
+    showToast('Regenerate failed: '+e.message,'red');
+    if(card)card.style.opacity='1';
+  }
+}
+
+// ============================================================
+// EDIT MODAL
+// ============================================================
+function openEditModal(id){
+  const q=loadQuestions().find(x=>x.id===id);
+  if(!q)return;
+  editingQId=id;
+  const msText=Array.isArray(q.markScheme)?q.markScheme.map(l=>`Level ${l.level} (${l.marks}): ${l.descriptor}`).join('\n'):q.markScheme||'';
+  let mcqHtml='';
+  if(q.mcqOptions){
+    mcqHtml=`<div class="mb-3">
+      <label class="lbl">MCQ Options (select radio = correct answer)</label>
+      ${q.mcqOptions.map((o,i)=>`<div class="flex items-center gap-2 mb-1">
+        <span style="font-weight:600;color:var(--gray-500);min-width:1.25rem">${o.letter}.</span>
+        <input type="text" id="mcqOpt${o.letter}" value="${o.text.replace(/"/g,'&quot;')}" class="flex-1">
+        <input type="radio" name="correctAnswer" value="${o.letter}" ${q.correctAnswer===o.letter?'checked':''}>
+      </div>`).join('')}
+    </div>`;
+  }
+  document.getElementById('editModalBody').innerHTML=`
+    <div class="grid4 mb-3">
+      <div><label class="lbl">Level</label><select id="eLvl"><option ${q.examLevel==='IGCSE'?'selected':''}>IGCSE</option><option ${q.examLevel==='AS'?'selected':''}>AS</option><option ${q.examLevel==='IAL'?'selected':''}>IAL</option></select></div>
+      <div><label class="lbl">Difficulty</label><select id="eDiff"><option value="easy" ${q.difficulty==='easy'?'selected':''}>Easy</option><option value="medium" ${q.difficulty==='medium'?'selected':''}>Medium</option><option value="difficult" ${q.difficulty==='difficult'?'selected':''}>Difficult</option></select></div>
+      <div><label class="lbl">Marks</label><input type="number" id="eMarks" value="${q.marks}" min="1" max="30"></div>
+      <div><label class="lbl">Command Word</label><input type="text" id="eCmd" value="${q.commandWord||''}"></div>
+    </div>
+    <div class="mb-3"><label class="lbl">Case Study (leave blank for none)</label><textarea id="eCase" style="min-height:80px">${q.caseStudy||''}</textarea></div>
+    <div class="mb-3"><label class="lbl">Question Text *</label><textarea id="eQtext" style="min-height:100px">${q.questionText}</textarea></div>
+    ${mcqHtml}
+    <div class="mb-3"><label class="lbl">Suggested Answer / Indicative Content</label><textarea id="eAnswer" style="min-height:120px">${q.suggestedAnswer||''}</textarea></div>
+    <div class="mb-3"><label class="lbl">Mark Scheme</label><textarea id="eMS" style="min-height:100px">${msText}</textarea></div>
+    <div class="grid2">
+      <div><label class="lbl">Real-world example (optional)</label><input type="text" id="eRW" value="${q.realWorldExample||''}"></div>
+      <div><label class="lbl">Source note (optional)</label><input type="text" id="eSrc" value="${q.sourceNote||''}"></div>
+    </div>
+    <div class="mt-2"><label class="lbl">Teacher verification note (optional)</label><input type="text" id="eVerify" value="${q.teacherVerificationNote||''}"></div>`;
+  openModal('editModal');
+}
+
+function saveEditedQuestion(){
+  if(!editingQId)return;
+  const qs=loadQuestions();
+  const idx=qs.findIndex(q=>q.id===editingQId);
+  if(idx<0)return;
+  const q=qs[idx];
+  q.examLevel=document.getElementById('eLvl').value;
+  q.difficulty=document.getElementById('eDiff').value;
+  q.marks=parseInt(document.getElementById('eMarks').value)||q.marks;
+  q.commandWord=document.getElementById('eCmd').value;
+  q.caseStudy=document.getElementById('eCase').value||undefined;
+  q.isCaseStudyBased=!!q.caseStudy;
+  q.questionText=document.getElementById('eQtext').value;
+  q.suggestedAnswer=document.getElementById('eAnswer').value;
+  q.markScheme=document.getElementById('eMS').value;
+  q.realWorldExample=document.getElementById('eRW').value||undefined;
+  q.hasRealWorldExample=!!q.realWorldExample;
+  q.sourceNote=document.getElementById('eSrc').value||undefined;
+  q.teacherVerificationNote=document.getElementById('eVerify').value||undefined;
+  if(q.mcqOptions){
+    q.mcqOptions.forEach(o=>{const el=document.getElementById('mcqOpt'+o.letter);if(el)o.text=el.value;});
+    const correctRadio=document.querySelector('input[name="correctAnswer"]:checked');
+    if(correctRadio)q.correctAnswer=correctRadio.value;
+  }
+  qs[idx]=q;
+  saveQuestions(qs);
+  if(currentExam){
+    currentExam.sections.forEach(s=>{s.questions=s.questions.map(x=>x.id===q.id?q:x);});
+    saveExams(loadExams().map(e=>e.id===currentExam.id?currentExam:e));
+  }
+  closeModal('editModal');
+  const card=document.getElementById('qcard-'+editingQId);
+  if(card)card.outerHTML=renderQuestionCard(q,{showEdit:true,showRegen:true,showDelete:true});
+  renderBank();
+  showToast('Question saved!','green');
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function updateDashboard(){
+  const qs=loadQuestions();
+  const exams=loadExams();
+  document.getElementById('statQCount').textContent=qs.length;
+  document.getElementById('statECount').textContent=exams.length;
+  document.getElementById('statSCount').textContent=new Set(qs.map(q=>q.subject)).size;
+  document.getElementById('statTCount').textContent=new Set(qs.map(q=>q.topic)).size;
+
+  const recentEl=document.getElementById('dashRecentExams');
+  if(exams.length===0){
+    recentEl.innerHTML='<div style="text-align:center;padding:2rem 0;color:var(--gray-400)"><div style="font-size:2rem;margin-bottom:.5rem">🕐</div><p class="text-sm">No exams yet. <button class="btn btn-ghost btn-sm text-brand" onclick="showPage(\'generate\')">Generate your first exam →</button></p></div>';
+  } else {
+    recentEl.innerHTML=exams.slice(0,5).map(e=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.625rem .75rem;border:1px solid var(--gray-100);border-radius:8px;margin-bottom:.5rem;cursor:pointer" onclick="loadExamToPreview('${e.id}')">
+        <div>
+          <div style="font-weight:500;font-size:.875rem">${e.title}</div>
+          <div style="font-size:.75rem;color:var(--gray-500)">${e.subject} · ${e.topic||'—'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <span class="badge ${e.examLevel==='IGCSE'?'badge-blue':e.examLevel==='AS'?'badge-indigo':'badge-violet'}">${e.examLevel}</span>
+          <span style="font-size:.75rem;color:var(--gray-400)">${new Date(e.dateCreated).toLocaleDateString()}</span>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function loadExamToPreview(examId){
+  const exam=loadExams().find(e=>e.id===examId);
+  if(!exam)return;
+  currentExam=exam;
+  showPage('generate');
+  renderGenResults(exam);
+  document.getElementById('genResults').scrollIntoView({behavior:'smooth'});
+}
+
+// ============================================================
+// QUESTION BANK
+// ============================================================
+function renderBank(){
+  const qs=loadQuestions();
+  const search=document.getElementById('bankSearch').value.toLowerCase();
+  const level=document.getElementById('bankLevel').value;
+  const diff=document.getElementById('bankDifficulty').value;
+  const type=document.getElementById('bankType').value;
+  const subject=document.getElementById('bankSubject').value;
+  const cs=document.getElementById('bankCaseStudy').value;
+  const rw=document.getElementById('bankRW').value;
+
+  // update subject filter options
+  const subjects=[...new Set(qs.map(q=>q.subject))];
+  const subjectSel=document.getElementById('bankSubject');
+  const currentSub=subjectSel.value;
+  subjectSel.innerHTML='<option value="all">All subjects</option>'+subjects.map(s=>`<option value="${s}" ${s===currentSub?'selected':''}>${s}</option>`).join('');
+
+  const filtered=qs.filter(q=>{
+    if(level!=='all'&&q.examLevel!==level)return false;
+    if(diff!=='all'&&q.difficulty!==diff)return false;
+    if(type!=='all'&&q.questionType!==type)return false;
+    if(subject!=='all'&&q.subject!==subject)return false;
+    if(cs==='yes'&&!q.isCaseStudyBased)return false;
+    if(cs==='no'&&q.isCaseStudyBased)return false;
+    if(rw==='yes'&&!q.hasRealWorldExample)return false;
+    if(rw==='no'&&q.hasRealWorldExample)return false;
+    if(search){
+      const s=search;
+      return q.questionText.toLowerCase().includes(s)||q.topic.toLowerCase().includes(s)||q.subject.toLowerCase().includes(s)||(q.commandWord||'').toLowerCase().includes(s);
+    }
+    return true;
+  });
+
+  document.getElementById('bankSubtitle').textContent=qs.length+' question'+(qs.length!==1?'s':'')+' saved';
+  document.getElementById('bankResultMeta').textContent=`Showing ${filtered.length} of ${qs.length} questions`;
+
+  const list=document.getElementById('bankList');
+  if(filtered.length===0){
+    list.innerHTML=`<div style="text-align:center;padding:3rem;color:var(--gray-400)">
+      <div style="font-size:2rem;margin-bottom:.5rem">🗄️</div>
+      <p>${qs.length===0?'No questions saved yet. Generate some first.':'No questions match your filters.'}</p>
+    </div>`;
+  } else {
+    list.innerHTML=filtered.map(q=>renderQuestionCard(q,{showEdit:true,showDelete:true})).join('');
+    renderCharts(filtered);
+    // Re-attach delete for bank
+    filtered.forEach(q=>{
+      const card=document.getElementById('qcard-'+q.id);
+      if(card){
+        const delBtn=card.querySelector('[title="Delete"]');
+        if(delBtn)delBtn.onclick=()=>deleteBankQuestion(q.id);
+      }
+    });
+  }
+}
+
+function deleteBankQuestion(id){
+  if(!confirm('Delete this question from the bank permanently?'))return;
+  saveQuestions(loadQuestions().filter(q=>q.id!==id));
+  renderBank();
+  showToast('Question deleted','red');
+}
+
+function clearBankFilters(){
+  document.getElementById('bankSearch').value='';
+  document.getElementById('bankLevel').value='all';
+  document.getElementById('bankDifficulty').value='all';
+  document.getElementById('bankType').value='all';
+  document.getElementById('bankSubject').value='all';
+  document.getElementById('bankCaseStudy').value='all';
+  document.getElementById('bankRW').value='all';
+  renderBank();
+}
+
+// ============================================================
+// EXAM BUILDER
+// ============================================================
+let builderSections=[{id:'s1',title:'Section A',questionIds:[]}];
+
+function renderBuilder(){
+  renderPicker();
+  renderBuilderSections();
+  updateBuilderSummary();
+}
+
+function renderPicker(){
+  const qs=loadQuestions();
+  const selectedIds=new Set(builderSections.flatMap(s=>s.questionIds));
+  const search=document.getElementById('pickerSearch').value.toLowerCase();
+  const level=document.getElementById('pickerLevel').value;
+  const diff=document.getElementById('pickerDiff').value;
+  const type=document.getElementById('pickerType').value;
+
+  const filtered=qs.filter(q=>{
+    if(selectedIds.has(q.id))return false;
+    if(level!=='all'&&q.examLevel!==level)return false;
+    if(diff!=='all'&&q.difficulty!==diff)return false;
+    if(type!=='all'&&q.questionType!==type)return false;
+    if(search&&!q.questionText.toLowerCase().includes(search)&&!q.topic.toLowerCase().includes(search))return false;
+    return true;
+  });
+
+  const diffBadge={easy:'badge-green',medium:'badge-yellow',difficult:'badge-red'};;
+  const levelBadge={IGCSE:'badge-blue',AS:'badge-indigo',IAL:'badge-violet'};
+
+  const el=document.getElementById('pickerList');
+  if(filtered.length===0){
+    el.innerHTML=`<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:.875rem">${qs.length===0?'No questions in bank yet':'No questions match filters'}</div>`;
+    return;
+  }
+  el.innerHTML=filtered.map(q=>`
+    <div class="picker-item">
+      <div class="picker-item-badges">
+        <span class="badge ${levelBadge[q.examLevel]||'badge-gray'}">${q.examLevel}</span>
+        <span class="badge ${diffBadge[q.difficulty]||'badge-gray'}">${q.difficulty}</span>
+        <span class="badge badge-gray">${q.marks}m</span>
+        <span class="badge badge-gray" style="font-size:.7rem">${TYPE_LABELS[q.questionType]||q.questionType}</span>
+      </div>
+      <div class="picker-item-text">${q.questionText}</div>
+      <div style="font-size:.75rem;color:var(--gray-400);margin-top:.25rem">${q.topic}</div>
+      <div style="margin-top:.5rem;display:flex;gap:.375rem;flex-wrap:wrap">
+        ${builderSections.map(s=>`<button class="btn btn-secondary btn-sm" onclick="addToBuilderSection('${q.id}','${s.id}')">+ ${s.title}</button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function addToBuilderSection(qId,sId){
+  const s=builderSections.find(x=>x.id===sId);
+  if(s&&!s.questionIds.includes(qId)){
+    s.questionIds.push(qId);
+    renderPicker();
+    renderBuilderSections();
+    updateBuilderSummary();
+  }
+}
+
+function removeFromBuilderSection(qId,sId){
+  const s=builderSections.find(x=>x.id===sId);
+  if(s)s.questionIds=s.questionIds.filter(id=>id!==qId);
+  renderPicker();
+  renderBuilderSections();
+  updateBuilderSummary();
+}
+
+function renderBuilderSections(){
+  const qs=loadQuestions();
+  const qMap=new Map(qs.map(q=>[q.id,q]));
+  const levelBadge={IGCSE:'badge-blue',AS:'badge-indigo',IAL:'badge-violet'};
+  const diffBadge={easy:'badge-green',medium:'badge-yellow',difficult:'badge-red'};
+
+  document.getElementById('builderSections').innerHTML=builderSections.map((s,si)=>`
+    <div class="section-box">
+      <div class="section-box-header">
+        <input type="text" value="${s.title}" onchange="builderSections[${si}].title=this.value">
+        <span style="font-size:.75rem;color:var(--gray-400);white-space:nowrap">${s.questionIds.length}q · ${s.questionIds.reduce((a,id)=>a+(qMap.get(id)?.marks||0),0)}m</span>
+        ${builderSections.length>1?`<button class="btn btn-ghost btn-sm" onclick="removeBuilderSection('${s.id}')" style="color:var(--red)">🗑️</button>`:''}
+      </div>
+      <div class="section-box-body">
+        ${s.questionIds.length===0?'<p style="font-size:.8125rem;color:var(--gray-400);text-align:center;padding:.5rem">Add questions from the left</p>':
+          s.questionIds.map(qId=>{
+            const q=qMap.get(qId);
+            if(!q)return '';
+            return `<div class="section-q-row" draggable="true" data-qid="${qId}" data-sid="${s.id}"
+              ondragstart="builderDragStart(event,'${qId}','${s.id}')"
+              ondragover="builderDragOver(event)"
+              ondragleave="builderDragLeave(event)"
+              ondrop="builderDrop(event,'${s.id}')"
+              ondragend="builderDragEnd(event)">
+              <span class="drag-handle" title="Drag to reorder">⠿</span>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;gap:.25rem;margin-bottom:.25rem">
+                  <span class="badge ${levelBadge[q.examLevel]||'badge-gray'}" style="font-size:.7rem">${q.examLevel}</span>
+                  <span class="badge ${diffBadge[q.difficulty]||'badge-gray'}" style="font-size:.7rem">${q.difficulty}</span>
+                  <span class="badge badge-gray" style="font-size:.7rem">${q.marks}m</span>
+                </div>
+                <div style="font-size:.8125rem;color:var(--gray-700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${q.questionText}</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="removeFromBuilderSection('${qId}','${s.id}')" style="color:var(--red);flex-shrink:0">✕</button>
+            </div>`;
+          }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function addBuilderSection(){
+  const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  builderSections.push({id:'s'+Date.now(),title:'Section '+letters[builderSections.length],questionIds:[]});
+  renderBuilderSections();
+  renderPicker();
+}
+
+function removeBuilderSection(id){
+  builderSections=builderSections.filter(s=>s.id!==id);
+  renderPicker();
+  renderBuilderSections();
+  updateBuilderSummary();
+}
+
+let _dragQid=null,_dragSid=null;
+
+function builderDragStart(e,qid,sid){
+  _dragQid=qid; _dragSid=sid;
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>e.target.classList.add('dragging'),0);
+}
+
+function builderDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.section-q-row.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+
+function builderDragLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function builderDragEnd(e){
+  document.querySelectorAll('.section-q-row').forEach(el=>el.classList.remove('dragging','drag-over'));
+  _dragQid=null; _dragSid=null;
+}
+
+function builderDrop(e,targetSid){
+  e.preventDefault();
+  const targetQid=e.currentTarget.dataset.qid;
+  document.querySelectorAll('.section-q-row').forEach(el=>el.classList.remove('drag-over','dragging'));
+  if(!_dragQid||targetQid===_dragQid){return;}
+
+  if(_dragSid===targetSid){
+    // Reorder within same section
+    const s=builderSections.find(x=>x.id===targetSid);
+    if(!s)return;
+    const fromIdx=s.questionIds.indexOf(_dragQid);
+    const toIdx=s.questionIds.indexOf(targetQid);
+    if(fromIdx===-1||toIdx===-1)return;
+    s.questionIds.splice(fromIdx,1);
+    s.questionIds.splice(toIdx,0,_dragQid);
+  } else {
+    // Move between sections
+    const fromS=builderSections.find(x=>x.id===_dragSid);
+    const toS=builderSections.find(x=>x.id===targetSid);
+    if(!fromS||!toS)return;
+    fromS.questionIds=fromS.questionIds.filter(id=>id!==_dragQid);
+    const toIdx=toS.questionIds.indexOf(targetQid);
+    toS.questionIds.splice(toIdx,0,_dragQid);
+  }
+
+  _dragQid=null; _dragSid=null;
+  renderBuilderSections();
+  updateBuilderSummary();
+}
+
+function updateBuilderSummary(){
+  const qs=loadQuestions();
+  const qMap=new Map(qs.map(q=>[q.id,q]));
+  const allIds=builderSections.flatMap(s=>s.questionIds);
+  const allQs=allIds.map(id=>qMap.get(id)).filter(Boolean);
+  const total=allQs.reduce((a,q)=>a+q.marks,0);
+
+  document.getElementById('builderSummary').textContent=allQs.length===0?'No questions selected yet':
+    `${allQs.length} questions · ${total} total marks · ${document.getElementById('builderTime').value} minutes`;
+
+  const diffs={easy:0,medium:0,difficult:0};
+  allQs.forEach(q=>{if(diffs[q.difficulty]!==undefined)diffs[q.difficulty]++;});
+  const chartEl=document.getElementById('builderDiffChart');
+  if(allQs.length===0){chartEl.innerHTML='';return;}
+  chartEl.innerHTML=Object.entries(diffs).map(([d,n])=>{
+    const pct=Math.round(n/allQs.length*100);
+    const color=d==='easy'?'#16a34a':d==='medium'?'#d97706':'#dc2626';
+    return `<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.375rem;font-size:.8125rem">
+      <span style="min-width:4.5rem;color:var(--gray-600)">${d.charAt(0).toUpperCase()+d.slice(1)}</span>
+      <div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span style="color:var(--gray-400);min-width:2.5rem">${n} (${pct}%)</span>
+    </div>`;
+  }).join('');
+}
+
+function saveBuilderExam(){
+  const qs=loadQuestions();
+  const qMap=new Map(qs.map(q=>[q.id,q]));
+  const allIds=builderSections.flatMap(s=>s.questionIds);
+  if(allIds.length===0){showToast('Add some questions first','red');return;}
+
+  const title=document.getElementById('builderTitle').value||'Untitled Exam';
+  const subject=document.getElementById('builderSubject').value||qs.find(q=>allIds.includes(q.id))?.subject||'General';
+  const level=document.getElementById('builderLevel').value;
+
+  let qNum=1;
+  const sections=builderSections.map(s=>({
+    title:s.title,
+    questions:s.questionIds.map(id=>{const q=qMap.get(id);return q?{...q,number:qNum++}:null;}).filter(Boolean)
+  }));
+
+  const exam={id:'exam-'+Date.now(),title,subject,topic:'',examLevel:level,examBoard:'',dateCreated:new Date().toISOString(),sections,settings:{}};
+  const exams=loadExams();
+  exams.unshift(exam);
+  saveExams(exams);
+  currentExam=exam;
+  showToast('Exam saved!','green');
+  showPage('export');
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function renderExport(){
+  const exams=loadExams();
+  if(exams.length===0){
+    document.getElementById('exportEmpty').classList.remove('hidden');
+    document.getElementById('exportContent').classList.add('hidden');
+    return;
+  }
+  document.getElementById('exportEmpty').classList.add('hidden');
+  document.getElementById('exportContent').classList.remove('hidden');
+
+  const listEl=document.getElementById('exportExamList');
+  listEl.innerHTML=exams.map((e,i)=>`
+    <div class="exam-list-item ${i===0?'selected':''}" id="exportItem-${e.id}" onclick="selectExportExam('${e.id}')">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:500;font-size:.875rem;margin-bottom:.25rem">${e.title}</div>
+          <div style="font-size:.75rem;color:var(--gray-500)">${e.subject}${e.topic?' · '+e.topic:''}</div>
+          <div style="display:flex;gap:.375rem;margin-top:.375rem;flex-wrap:wrap">
+            <span class="badge ${e.examLevel==='IGCSE'?'badge-blue':e.examLevel==='AS'?'badge-indigo':'badge-violet'}" style="font-size:.7rem">${e.examLevel}</span>
+            <span style="font-size:.75rem;color:var(--gray-400)">${e.sections.reduce((a,s)=>a+s.questions.length,0)} questions</span>
+          </div>
+        </div>
+        <button onclick="event.stopPropagation();deleteExportExam('${e.id}')" style="color:var(--gray-300);background:none;border:none;cursor:pointer;padding:.25rem">🗑️</button>
+      </div>
+    </div>`).join('');
+
+  selectExportExam(exams[0].id);
+}
+
+function selectExportExam(id){
+  document.querySelectorAll('.exam-list-item').forEach(el=>el.classList.remove('selected'));
+  const item=document.getElementById('exportItem-'+id);
+  if(item)item.classList.add('selected');
+
+  const exam=loadExams().find(e=>e.id===id);
+  if(!exam)return;
+  currentExam=exam;
+  renderExportOptions(exam);
+}
+
+function deleteExportExam(id){
+  if(!confirm('Delete this exam?'))return;
+  saveExams(loadExams().filter(e=>e.id!==id));
+  renderExport();
+  showToast('Exam deleted','red');
+}
+
+function buildStudentPaper(exam){
+  const total=exam.sections.reduce((a,s)=>a+s.questions.reduce((b,q)=>b+q.marks,0),0);
+  const lines=[
+    exam.title.toUpperCase(),
+    `Subject: ${exam.subject}  |  Level: ${exam.examLevel}  |  Total Marks: ${total}`,
+    '',
+    'INSTRUCTIONS TO STUDENTS:',
+    'Answer ALL questions. Write clearly. Show your working where calculations are required.',
+    '',
+  ];
+  exam.sections.forEach(s=>{
+    lines.push('═'.repeat(60));
+    lines.push(s.title.toUpperCase());
+    lines.push('═'.repeat(60));
+    lines.push('');
+    s.questions.forEach(q=>{
+      if(q.caseStudy){lines.push('Case Study:');lines.push(q.caseStudy);lines.push('');}
+      lines.push(`Question ${q.number}  [${q.marks} mark${q.marks!==1?'s':''}]`);
+      lines.push(q.questionText);
+      if(q.mcqOptions)q.mcqOptions.forEach(o=>lines.push(`  ${o.letter}.  ${o.text}`));
+      lines.push('');
+      lines.push('Answer: ...................................................................................');
+      lines.push('');
+    });
+  });
+  return lines.join('\n');
+}
+
+function buildTeacherPaper(exam){
+  const lines=[`TEACHER VERSION — ${exam.title}`,`Subject: ${exam.subject}  |  Level: ${exam.examLevel}`,`Date: ${new Date(exam.dateCreated).toLocaleDateString()}`,'',''];
+  exam.sections.forEach(s=>{
+    lines.push('─── '+s.title.toUpperCase()+' ───');
+    s.questions.forEach(q=>{
+      if(q.caseStudy){lines.push('Case Study: '+q.caseStudy);lines.push('');}
+      lines.push(`Q${q.number}. [${q.marks}m] ${q.questionText}`);
+      if(q.mcqOptions){
+        q.mcqOptions.forEach(o=>lines.push(`  ${o.letter}. ${o.text}`));
+        lines.push(`  ✓ Correct: ${q.correctAnswer}`);
+        if(q.mcqExplanation)lines.push(`  Explanation: ${q.mcqExplanation}`);
+      }
+      lines.push(`  ➤ Answer: ${q.suggestedAnswer||''}`);
+      if(q.markScheme){
+        const ms=Array.isArray(q.markScheme)?q.markScheme.map(l=>`L${l.level}(${l.marks}): ${l.descriptor}`).join(' | '):q.markScheme;
+        lines.push(`  Mark Scheme: ${ms}`);
+      }
+      if(q.realWorldExample)lines.push(`  Real-world: ${q.realWorldExample}`);
+      if(q.teacherVerificationNote)lines.push(`  ⚠ ${q.teacherVerificationNote}`);
+      lines.push('');
+    });
+  });
+  return lines.join('\n');
+}
+
+function buildAnswerKey(exam){
+  const lines=[`ANSWER KEY — ${exam.title}`,''];
+  exam.sections.forEach(s=>{
+    lines.push('─── '+s.title.toUpperCase()+' ───');
+    s.questions.forEach(q=>{
+      if(q.questionType==='MCQ'){
+        lines.push(`Q${q.number}: ${q.correctAnswer}`);
+      } else {
+        const ans=(q.suggestedAnswer||'').slice(0,150);
+        lines.push(`Q${q.number} [${q.marks}m]: ${ans}${ans.length===150?'…':''}`);
+      }
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function renderExportOptions(exam){
+  const opts=[
+    {key:'student',label:'Student Version',icon:'🎓',color:'#2563eb',desc:'Questions only — no answers or mark schemes',fn:()=>buildStudentPaper(exam)},
+    {key:'teacher',label:'Teacher Version',icon:'📖',color:'#16a34a',desc:'Questions with answers and mark schemes',fn:()=>buildTeacherPaper(exam)},
+    {key:'answers',label:'Answer Key',icon:'📋',color:'#7c3aed',desc:'Condensed answer key for quick marking',fn:()=>buildAnswerKey(exam)},
+  ];
+
+  document.getElementById('exportOptions').innerHTML=opts.map(opt=>{
+    const preview=opt.fn().slice(0,400);
+    return `<div class="export-option">
+      <div class="export-option-header">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <div class="export-option-icon" style="background:${opt.color}">${opt.icon}</div>
+          <div>
+            <div style="font-weight:600;font-size:.9375rem">${opt.label}</div>
+            <div style="font-size:.8125rem;color:var(--gray-500)">${opt.desc}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.375rem">
+          <button class="btn btn-secondary btn-sm" onclick="previewExport('${opt.key}')">👁 Preview</button>
+          <button class="btn btn-secondary btn-sm" onclick="copyExport('${opt.key}')">📋 Copy</button>
+          <button class="btn btn-secondary btn-sm" onclick="printExport('${opt.key}')">🖨 Print</button>
+        </div>
+      </div>
+      <div class="preview-box" id="preview-${opt.key}">${preview}…</div>
+    </div>`;
+  }).join('')+`
+  <div class="alert alert-blue mt-3">
+    <span class="alert-icon">ℹ️</span>
+    <div>
+      <strong>To export to Google Docs:</strong> Click <strong>Copy</strong> on any version, then open a new Google Doc and paste (Ctrl+V or ⌘V).
+      Use <strong>Print</strong> to open a formatted preview you can save as PDF via your browser's print dialog.
+    </div>
+  </div>`;
+
+  // Store content for buttons
+  window._exportContent={};
+  opts.forEach(opt=>window._exportContent[opt.key]=opt.fn());
+}
+
+function previewExport(key){
+  const text=window._exportContent?.[key];
+  if(!text)return;
+  const labels={student:'Student Version',teacher:'Teacher Version',answers:'Answer Key'};
+  window._previewKey=key;
+  document.getElementById('previewModalTitle').textContent='Preview — '+( labels[key]||key);
+  document.getElementById('previewModalContent').textContent=text;
+  document.getElementById('exportPreviewModal').classList.add('active');
+}
+
+function closePreviewModal(){
+  document.getElementById('exportPreviewModal').classList.remove('active');
+}
+
+function copyExport(key){
+  const text=window._exportContent?.[key];
+  if(!text)return;
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied to clipboard!','green'));
+}
+
+function printExport(key){
+  const text=window._exportContent?.[key];
+  if(!text)return;
+
+  // Inject content into a hidden div on this page — no new tab opened
+  const el=document.createElement('div');
+  el.id='__printContent';
+  el.innerHTML=`<pre>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`;
+  document.body.appendChild(el);
+
+  const style=document.createElement('style');
+  style.id='__printStyles';
+  style.textContent=`@media print{body>*{display:none!important}#__printContent{display:block!important}#__printContent pre{font-family:'Times New Roman',serif;font-size:12pt;line-height:1.7;color:#000;white-space:pre-wrap;margin:0}}`;
+  document.head.appendChild(style);
+
+  window.print();
+
+  // Clean up immediately after dialog closes
+  document.body.removeChild(el);
+  document.head.removeChild(style);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded',function(){
+  initGeneratePage();
+  updateDashboard();
+
+  // Auto-prompt for API key if not set
+  if(!getApiKey()){
+    setTimeout(()=>{
+      showApiKeyModal();
+    },600);
+  }
+
+  // Subject change updates summary
+  document.getElementById('subject').addEventListener('change',updateGenSummary);
+  document.getElementById('difficulty').addEventListener('change',updateGenSummary);
+});
+</script>
+</body>
+</html>
